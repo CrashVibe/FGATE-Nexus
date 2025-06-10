@@ -1,0 +1,58 @@
+{
+    "name": "FGate-Nexus",
+    "private": true,
+    "version": "0.0.1",
+    "type": "module",
+    "scripts": {
+        "build": "bun run generate:index && nuxt build",
+        "dev": "nuxt dev",
+        "generate": "nuxt generate",
+        "preview": "nuxt preview",
+        "postinstall": "nuxt prepare",
+        "start": "node .output/server/index.mjs",
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "drizzle-kit migrate",
+        "build:all": "bun run build:mac && bun run build:linux && bun run build:win",
+        "build:mac": "bun build --compile --target=bun-darwin-x64 ./entry.ts --outfile ./dist/FGate-Nexus-mac && bun run copy:migrations",
+        "build:linux": "bun build --compile --target=bun-linux-x64 ./entry.ts --outfile ./dist/FGate-Nexus-linux && bun run copy:migrations",
+        "build:win": "bun build --compile --target=bun-windows-x64 ./entry.ts --outfile ./dist/FGate-Nexus-win.exe && bun run copy:migrations",
+        "copy:migrations": "node -e \"const fs=require('fs'); const path=require('path'); if(fs.existsSync('./migrations')) { fs.cpSync('./migrations', './dist/migrations', {recursive: true}); }\""
+    },
+    "dependencies": {
+        "@vicons/ionicons5": "^0.13.0",
+        "@vueuse/core": "^13.3.0",
+        "alova": "^3.3.0",
+        "crossws": "0.4.1",
+        "dotenv": "^16.5.0",
+        "drizzle-orm": "^0.44.2",
+        "module-alias": "^2.2.3",
+        "naive-ui": "^2.41.1",
+        "nuxt": "^3.17.5",
+        "nuxtjs-naive-ui": "1.0.2",
+        "uuid": "^11.1.0",
+        "vooks": "^0.2.12",
+        "vue": "^3.5.16",
+        "vue-router": "^4.5.1",
+        "ws": "^8.18.2"
+    },
+    "devDependencies": {
+        "@types/bun": "latest",
+        "@types/ws": "^8.18.1",
+        "@vercel/ncc": "^0.38.3",
+        "drizzle-kit": "^0.31.1",
+        "eslint": "^9.28.0",
+        "less": "^4.3.0",
+        "prettier": "^3.5.3",
+        "typescript": "^5.8.3",
+        "unplugin-auto-import": "^19.3.0",
+        "unplugin-vue-components": "^28.7.0"
+    },
+    "bun": {
+        "overrides": {
+            "crossws": "0.4.1"
+        }
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    }
+}

@@ -1,0 +1,207 @@
+@header-height: 60px;
+@sidebar-width: 280px;
+@padding-size: 1rem;
+
+html,
+body,
+#app {
+    overflow: hidden;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+html:not(.dark) {
+    background-color: white;
+}
+html.dark {
+    background-color: black;
+}
+
+/* 页面过渡动画 - 优化版本 */
+.page-enter-active {
+    transition: all 0.4s cubic-bezier(0.55, 0, 0.1, 1);
+    transform-origin: center center;
+}
+
+.page-leave-active {
+    transition: all 0.4s cubic-bezier(0.55, 0, 0.1, 1);
+    transform-origin: center center;
+}
+
+.page-enter-from {
+    opacity: 0;
+    transform: scale(0.9) translateY(50px);
+}
+
+.page-leave-to {
+    opacity: 0;
+    transform: scale(1.1) translateY(-30px);
+}
+
+.page-enter-to,
+.page-leave-from {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* 布局过渡动画 - 优化版本 */
+.layout-enter-active {
+    transition: all 0.3s cubic-bezier(0.55, 0, 0.1, 1);
+    transform-origin: center center;
+}
+
+.layout-leave-active {
+    transition: all 0.3s cubic-bezier(0.55, 0, 0.1, 1);
+    transform-origin: center center;
+}
+
+.layout-enter-from {
+    opacity: 0;
+    transform: scale(1.05);
+}
+
+.layout-leave-to {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+.layout-enter-to,
+.layout-leave-from {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* 确保过渡期间的层级 */
+.page-enter-active,
+.page-leave-active,
+.layout-enter-active,
+.layout-leave-active {
+    position: relative;
+    z-index: 1;
+}
+
+/* 内容区域的平滑过渡 - 优化版本 */
+.content-transition-enter-active {
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.content-transition-leave-active {
+    transition: all 0.15s ease-in-out;
+}
+
+.content-transition-enter-from {
+    opacity: 0;
+    transform: scale(0.95) translateY(30px);
+}
+
+.content-transition-leave-to {
+    opacity: 0;
+    transform: translateY(5px) scale(0.99);
+}
+
+.content-transition-enter-to,
+.content-transition-leave-from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* 内容过渡动画增强 */
+.content-transition-enter-active {
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.content-transition-enter-from {
+    opacity: 0;
+    transform: scale(0.95) translateY(30px);
+}
+
+.content-transition-enter-to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+}
+
+/* 页面容器动画 */
+.page-container {
+    min-height: 100vh;
+    position: relative;
+}
+
+/* 为网格项添加悬停效果 */
+.n-grid-item {
+    transition: transform 0.2s ease;
+}
+
+/* 滚动动画增强 */
+@media (prefers-reduced-motion: no-preference) {
+    * {
+        scroll-behavior: smooth;
+    }
+
+    /* 提升动画质量 */
+    .page-transition-enter-active,
+    .page-transition-leave-active,
+    .layout-transition-enter-active,
+    .layout-transition-leave-active {
+        will-change: transform, opacity;
+        backface-visibility: hidden;
+        perspective: 1000px;
+    }
+}
+
+/* Loading Bar 自定义样式 */
+.n-loading-bar {
+    z-index: 9999 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 4px !important;
+}
+
+/* 响应式设计 */
+@media only screen and (max-width: 639px) {
+    body {
+        overflow: visible;
+    }
+
+    .page-enter-from {
+        transform: scale(0.9) translateY(30px);
+    }
+
+    .page-leave-to {
+        transform: scale(1.05) translateY(-20px);
+    }
+
+    .layout-enter-from,
+    .layout-leave-to {
+        transform: scale(1.02);
+    }
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* 提升文字渲染质量 */
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
