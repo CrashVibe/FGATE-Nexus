@@ -134,8 +134,17 @@ class AdapterWebSocketServerManager {
             return;
         }
         const { wss } = botMap.get(String(adapter.botId))!;
-        // 批量关闭连接
-        wss.clients.forEach((client) => client.terminate());
+        // 安全关闭连接
+        wss.clients.forEach((client) => {
+            try {
+                // 检查连接状态，避免重复关闭
+                if (client.readyState === client.OPEN || client.readyState === client.CONNECTING) {
+                    client.terminate();
+                }
+            } catch (error) {
+                console.warn(`关闭客户端连接时出错:`, error);
+            }
+        });
         // 清理心跳定时器
         wss.clients.forEach(() => {
             const connectionId = `${adapter.botId}_${Date.now()}`;
@@ -250,8 +259,17 @@ class AdapterWebSocketServerManager {
 
         for (const botMap of this.pathMap.values()) {
             for (const { wss } of botMap.values()) {
-                // 批量终止连接
-                wss.clients.forEach((client) => client.terminate());
+                // 安全终止连接
+                wss.clients.forEach((client) => {
+                    try {
+                        // 检查连接状态，避免重复关闭
+                        if (client.readyState === client.OPEN || client.readyState === client.CONNECTING) {
+                            client.terminate();
+                        }
+                    } catch (error) {
+                        console.warn(`关闭客户端连接时出错:`, error);
+                    }
+                });
 
                 // 收集关闭 Promise
                 closePromises.push(new Promise<void>((resolve) => wss.close(() => resolve())));
@@ -289,8 +307,18 @@ class AdapterWebSocketServerManager {
 
                 // 批量关闭旧连接
                 const closePromises = Array.from(wss.clients).map((client) => {
-                    client.terminate();
-                    return Promise.resolve();
+                    return new Promise<void>((resolve) => {
+                        try {
+                            // 检查连接状态，避免重复关闭
+                            if (client.readyState === client.OPEN || client.readyState === client.CONNECTING) {
+                                client.terminate();
+                            }
+                            resolve();
+                        } catch (error) {
+                            console.warn(`关闭客户端连接时出错:`, error);
+                            resolve(); // 即使出错也要继续
+                        }
+                    });
                 });
 
                 await Promise.all(closePromises);
