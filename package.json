@@ -13,9 +13,9 @@
         "db:generate": "drizzle-kit generate",
         "db:migrate": "drizzle-kit migrate",
         "build:all": "bun run build:mac && bun run build:linux && bun run build:win",
-        "build:mac": "bun build --compile --target=bun-darwin-x64 ./entry.ts --outfile ./dist/FGate-Nexus-mac && bun run copy:migrations",
-        "build:linux": "bun build --compile --target=bun-linux-x64 ./entry.ts --outfile ./dist/FGate-Nexus-linux && bun run copy:migrations",
-        "build:win": "bun build --compile --target=bun-windows-x64 ./entry.ts --outfile ./dist/FGate-Nexus-win.exe && bun run copy:migrations",
+        "build:mac": "bun build --compile --target=bun-darwin-arm64 ./entry.ts --outfile ./dist/FGate-Nexus-mac-arm64 && bun build --compile --target=bun-darwin-x64 ./entry.ts --outfile ./dist/FGate-Nexus-mac-x64 && bun run copy:migrations",
+        "build:linux": "bun build --compile --target=bun-linux-arm64 ./entry.ts --outfile ./dist/FGate-Nexus-linux-arm64 && bun build --compile --target=bun-linux-x64 ./entry.ts --outfile ./dist/FGate-Nexus-linux-x64 && bun run copy:migrations",
+        "build:win": "bun build --compile --target=bun-windows-arm64 ./entry.ts --outfile ./dist/FGate-Nexus-win-arm64.exe && bun build --compile --target=bun-windows-x64 ./entry.ts --outfile ./dist/FGate-Nexus-win-x64.exe && bun run copy:migrations",
         "copy:migrations": "node -e \"const fs=require('fs'); const path=require('path'); if(fs.existsSync('./migrations')) { fs.cpSync('./migrations', './dist/migrations', {recursive: true}); }\""
     },
     "dependencies": {
