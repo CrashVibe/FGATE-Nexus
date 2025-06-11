@@ -14,6 +14,18 @@ CREATE TABLE `onebot_adapters` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `bot_id_idx` ON `onebot_adapters` (`bot_id`);--> statement-breakpoint
+CREATE TABLE `players` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`name` text NOT NULL,
+	`uuid` text NOT NULL,
+	`ip` text,
+	`social_accounts` text,
+	`servers` text,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `player_uuid_idx` ON `players` (`uuid`);--> statement-breakpoint
 CREATE TABLE `servers` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
@@ -23,4 +35,12 @@ CREATE TABLE `servers` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `name_idx` ON `servers` (`name`);--> statement-breakpoint
-CREATE UNIQUE INDEX `token_idx` ON `servers` (`token`);
+CREATE UNIQUE INDEX `token_idx` ON `servers` (`token`);--> statement-breakpoint
+CREATE TABLE `social_accounts` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`adapter_type` text NOT NULL,
+	`name` text NOT NULL,
+	`uiuid` text NOT NULL,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL
+);

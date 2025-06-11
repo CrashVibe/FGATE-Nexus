@@ -36,7 +36,7 @@
 
 <script setup lang="ts">
 import { useBreakpoint, useMemo } from 'vooks';
-import { MenuOutline, LinkOutline } from '@vicons/ionicons5';
+import { MenuOutline, LinkOutline, PeopleOutline, PersonCircleOutline } from '@vicons/ionicons5';
 import { useRouter, useRoute, type RouteLocationAsPathGeneric } from 'vue-router';
 import { NLayout, NLayoutHeader, NLayoutSider, NLayoutContent, NMenu, NIcon } from 'naive-ui';
 function useIsMobile() {
@@ -52,7 +52,9 @@ function renderIcon(icon: Component) {
 }
 const menuOptions = [
     { label: '服务器管理', key: '/', icon: renderIcon(MenuOutline) },
-    { label: '适配器', key: '/adapters', icon: renderIcon(LinkOutline) }
+    { label: '适配器', key: '/adapters', icon: renderIcon(LinkOutline) },
+    { label: '玩家列表', key: '/players', icon: renderIcon(PeopleOutline) },
+    { label: '社交账号', key: '/accounts', icon: renderIcon(PersonCircleOutline) }
 ];
 
 const selectedKey = computed(() => {
