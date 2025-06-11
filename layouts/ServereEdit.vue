@@ -19,7 +19,14 @@
         </n-layout-header>
         <n-layout has-sider bordered class="sec_layout">
             <!-- 侧边栏 -->
-            <n-layout-sider v-if="showSider" bordered show-trigger :native-scrollbar="false" collapse-mode="width">
+            <n-layout-sider
+                v-if="showSider"
+                bordered
+                show-trigger
+                :native-scrollbar="false"
+                collapse-mode="width"
+                :width="200"
+            >
                 <n-menu
                     :key="selectedKey"
                     :options="menuOptions"
@@ -42,6 +49,7 @@ import { useBreakpoint, useMemo } from 'vooks';
 import { MenuOutline, SettingsOutline, ServerOutline, BuildOutline } from '@vicons/ionicons5';
 import { useRouter, useRoute, type RouteLocationAsPathGeneric } from 'vue-router';
 import { NIcon } from 'naive-ui';
+import { provide } from 'vue';
 function useIsMobile() {
     const breakpointRef = useBreakpoint();
     return useMemo(() => {
@@ -61,37 +69,42 @@ const getCurrentServerId = () => {
 
 const menuOptions = computed(() => {
     const serverId = getCurrentServerId();
-    const menu: Array<{ label: string; key: string; icon: ReturnType<typeof renderIcon> }> = [];
+    const menu: Array<{ label: string; key: string; icon: ReturnType<typeof renderIcon>; desc?: string }> = [];
 
     menu.push({
         label: '返回服务器管理',
         key: '/',
-        icon: renderIcon(MenuOutline)
+        icon: renderIcon(MenuOutline),
+        desc: '返回服务器列表主页。'
     });
 
     if (serverId) {
         menu.push({
             label: '配置总览',
             key: `/servers/${serverId}/config`,
-            icon: renderIcon(SettingsOutline)
-        });
-
-        menu.push({
-            label: '账号绑定',
-            key: `/servers/${serverId}/binding`,
-            icon: renderIcon(SettingsOutline)
+            icon: renderIcon(SettingsOutline),
+            desc: '查看和管理服务器的所有配置项总览。'
         });
 
         menu.push({
             label: '基础设置',
             key: `/servers/${serverId}/general`,
-            icon: renderIcon(ServerOutline)
+            icon: renderIcon(ServerOutline),
+            desc: '配置服务器的基础运行参数和常规设置。'
+        });
+
+        menu.push({
+            label: '账号绑定',
+            key: `/servers/${serverId}/binding`,
+            icon: renderIcon(SettingsOutline),
+            desc: '设置社交账号与游戏账号的绑定规则。'
         });
 
         menu.push({
             label: '高级配置',
             key: `/servers/${serverId}/advanced`,
-            icon: renderIcon(BuildOutline)
+            icon: renderIcon(BuildOutline),
+            desc: '高级功能配置，包括性能优化、调试选项等。'
         });
     }
 
@@ -123,6 +136,7 @@ const isMobile = useIsMobile();
 const showSider = useMemo(() => {
     return !isMobile.value && !isMobile.value;
 });
+provide('menuOptions', menuOptions);
 </script>
 
 <style lang="less" scoped>

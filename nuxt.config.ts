@@ -31,7 +31,17 @@ export default defineNuxtConfig({
         },
         build: {
             target: 'esnext',
-            minify: true,
+            minify: 'terser',
+            terserOptions: {
+                compress: {
+                    drop_console: true,
+                    drop_debugger: true,
+                    pure_funcs: ['console.log']
+                },
+                format: {
+                    comments: false
+                }
+            },
             cssCodeSplit: true,
             sourcemap: true
         },

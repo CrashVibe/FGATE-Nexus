@@ -19,23 +19,24 @@
                         </n-space>
                     </div>
 
-                    <!-- 配置选项卡片 -->
-                    <n-grid :cols="1" :x-gap="20" :y-gap="20" responsive="screen">
-                        <n-grid-item :span="1">
-                            <n-card title="基础设置" hoverable style="cursor: pointer" @click="navigateTo('general')">
-                                <template #header-extra>
-                                    <n-icon :component="ServerOutline" size="20" />
-                                </template>
-                                <n-text depth="3"> 配置服务器的基础运行参数和常规设置。 </n-text>
-                            </n-card>
-                        </n-grid-item>
+                    <!-- 简介卡片 -->
+                    <n-card v-if="desc" size="small" class="desc-card">
+                        <n-text depth="3">{{ desc }}</n-text>
+                    </n-card>
 
-                        <n-grid-item :span="1">
-                            <n-card title="高级配置" hoverable style="cursor: pointer" @click="navigateTo('advanced')">
+                    <!-- 配置选项卡片 -->
+                    <n-grid :cols="'1 800:2'" :x-gap="20" :y-gap="20" responsive="screen">
+                        <n-grid-item v-for="menuItem in configMenuItems" :key="menuItem.key" :span="1">
+                            <n-card
+                                :title="menuItem.label"
+                                hoverable
+                                style="cursor: pointer"
+                                @click="navigateToMenuItem(menuItem.key)"
+                            >
                                 <template #header-extra>
-                                    <n-icon :component="BuildOutline" size="20" />
+                                    <n-icon :component="getIconForMenuItem(menuItem.key)" size="20" />
                                 </template>
-                                <n-text depth="3"> 高级功能配置，包括性能优化、调试选项等。 </n-text>
+                                <n-text depth="3">{{ menuItem.desc }}</n-text>
                             </n-card>
                         </n-grid-item>
                     </n-grid>
@@ -46,9 +47,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, inject } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ArrowBackOutline, ServerOutline, BuildOutline } from '@vicons/ionicons5';
+import { ArrowBackOutline, ServerOutline, BuildOutline, SettingsOutline } from '@vicons/ionicons5';
 import { useRequest } from 'alova/client';
 import { useMessage } from 'naive-ui';
 import type { ApiResponse, ServerWithStatus } from '~/server/shared/types/server/api';
@@ -64,6 +65,19 @@ const { serverApi } = useApi();
 const serverData = ref<ApiResponse<ServerWithStatus> | null>(null);
 const loading = ref(true);
 const message = useMessage();
+const menuOptions = inject(
+    'menuOptions',
+    computed(() => [])
+) as unknown as import('vue').Ref<Array<{ label: string; key: string; desc?: string }>>;
+const desc = computed(() => {
+    const found = menuOptions.value.find((item) => item.key === route.path);
+    return found?.desc || '';
+});
+
+// 过滤出配置相关的菜单项（排除"返回服务器管理"）
+const configMenuItems = computed(() => {
+    return menuOptions.value.filter((item) => item.key !== '/' && item.key.includes('/servers/'));
+});
 
 useRequest(serverApi.getServer(serverId.value))
     .onSuccess(({ data }) => {
@@ -81,8 +95,16 @@ const goBack = () => {
     router.push('/');
 };
 
-const navigateTo = (configType: string) => {
-    router.push(`/servers/${serverId.value}/${configType}`);
+const navigateToMenuItem = (key: string) => {
+    router.push(key);
+};
+
+const getIconForMenuItem = (key: string) => {
+    if (key.includes('/config')) return SettingsOutline;
+    if (key.includes('/general')) return ServerOutline;
+    if (key.includes('/advanced')) return BuildOutline;
+    if (key.includes('/binding')) return SettingsOutline;
+    return SettingsOutline;
 };
 </script>
 
