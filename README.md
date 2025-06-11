@@ -76,24 +76,6 @@ bun run build:all
 
 构建完成后，在 `dist/` 目录中：
 
-### Windows
-
-```bash
-./FGate-Nexus-win.exe
-```
-
-### macOS
-
-```bash
-./FGate-Nexus-mac
-```
-
-### Linux
-
-```bash
-./FGate-Nexus-linux
-```
-
 ## 📁 项目结构
 
 ```
@@ -155,14 +137,6 @@ bun run db:migrate
 
 项目使用 ESLint 和 Prettier 确保代码质量：
 
-```bash
-# 检查代码规范（自动执行）
-bun run lint
-
-# 格式化代码（自动执行）
-bun run format
-```
-
 ## 📋 系统要求
 
 ### 开发环境
@@ -173,8 +147,8 @@ bun run format
 
 ### 运行环境（二进制文件）
 
-- **Linux**: x64 架构
-- **macOS**: x64 架构（Intel 或 Apple Silicon with Rosetta）
+- **Linux**: x64 和 ARM 架构
+- **macOS**: x64 和 ARM 架构（Intel 与 Apple Silicon）
 - **Windows**: x64 架构
 
 ## 🚀 快速开始
@@ -213,4 +187,4 @@ bun run format
 
 ## 许可证
 
-本项目基于 MIT 许可证开源。
+本项目基于 GPL 许可证开源。
