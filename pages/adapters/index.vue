@@ -2,17 +2,17 @@
 import { AddCircleOutline, RefreshOutline } from '@vicons/ionicons5';
 import AdapterOnebotCard from '~/components/Card/Adapter/OnebotCard.vue';
 import type { onebot_adapters } from '@/server/shared/types/adapters/adapter';
-import type { AdapterListResponse, AdapterActionResponse } from '@/server/shared/types/adapters/api';
 
 import type { AdapterFormData, AdapterPayload } from '../../utils/adapters/forms';
 import { onebotRules } from '../../utils/adapters/rules';
 import Common from '~/components/Card/Adapter/Common.vue';
+import { useRequest } from 'alova/client';
 
 const { adapterApi } = useApi();
 
 const showModal = ref(false);
 const submitting = ref(false);
-const formRef = ref<any>(null);
+const formRef = ref<HTMLFormElement | null>(null);
 const adapters = ref<onebot_adapters[]>([]);
 const message = useMessage();
 const refreshTimer = ref<NodeJS.Timeout | null>(null);
@@ -61,46 +61,49 @@ const handleClose = () => {
     showModal.value = false;
 };
 
-async function getServerList() {
-    try {
-        const data = await adapterApi.getAdapters();
-        if (data.success && data.data) {
-            const newAdapters = data.data.map((newAdapter: any) => {
-                if (editingAdapters.value.has(newAdapter.id)) {
-                    const existingAdapter = adapters.value.find((a: any) => a.id === newAdapter.id);
-                    return existingAdapter || newAdapter;
-                }
-                return newAdapter;
-            });
-            adapters.value = newAdapters;
-            lastUpdateTime.value = new Date().toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-        } else {
-            message.error('获取适配器失败：' + data.message || '未知错误');
-        }
-    } catch (error) {
-        console.error('获取适配器列表失败:', error);
-        message.error('获取适配器列表失败');
-    }
+function getServerList() {
+    useRequest(adapterApi.getAdapters())
+        .onSuccess(({ data }) => {
+            if (data.success && data.data) {
+                const newAdapters = data.data.map((newAdapter: onebot_adapters) => {
+                    if (editingAdapters.value.has(newAdapter.id)) {
+                        const existingAdapter = adapters.value.find((a: onebot_adapters) => a.id === newAdapter.id);
+                        return existingAdapter || newAdapter;
+                    }
+                    return newAdapter;
+                });
+                adapters.value = newAdapters;
+                lastUpdateTime.value = new Date().toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            } else {
+                message.error(data.message || '获取适配器失败');
+            }
+        })
+        .onError(() => {
+            message.error('获取适配器列表失败');
+        });
 }
 
 const refreshing = ref(false);
-const handleRefresh = async () => {
+const handleRefresh = () => {
     refreshing.value = true;
-    try {
-        await getServerList();
-        message.success('刷新成功');
-    } catch {
-        message.error('刷新失败');
-    } finally {
-        refreshing.value = false;
-    }
+    useRequest(adapterApi.getAdapters())
+        .onSuccess(() => {
+            getServerList();
+            message.success('刷新成功');
+        })
+        .onError(() => {
+            message.error('刷新失败');
+        })
+        .onComplete(() => {
+            refreshing.value = false;
+        });
 };
 
 onMounted(() => {
@@ -117,16 +120,12 @@ onUnmounted(() => {
     }
 });
 
-const handleSubmit = async (e: Event) => {
+const handleSubmit = (e: Event) => {
     e.preventDefault();
     submitting.value = true;
-
-    try {
-        await formRef.value?.validate();
-
+    formRef.value?.validate().then(() => {
         const { adapter_type: adapter, config } = formData.value;
         const payload: AdapterPayload = { adapter_type: adapter };
-
         if (adapter === 'onebot') {
             const data = config.onebot;
             payload.config = {
@@ -137,21 +136,23 @@ const handleSubmit = async (e: Event) => {
                 enabled: data.enabled ?? true
             };
         }
-
-        const response = await adapterApi.addAdapter(payload);
-
-        if (response.success) {
-            message.success('适配器创建成功');
-            handleClose();
-            getServerList();
-        } else {
-            message.error(response.message || '提交适配器失败');
-        }
-    } catch (error: any) {
-        message.error(`提交适配器失败：${error.message || '未知错误'}`);
-    } finally {
-        submitting.value = false;
-    }
+        useRequest(adapterApi.addAdapter(payload))
+            .onSuccess(({ data }) => {
+                if (data.success) {
+                    message.success('适配器创建成功');
+                    handleClose();
+                    getServerList();
+                } else {
+                    message.error(data.message || '提交适配器失败');
+                }
+            })
+            .onError(() => {
+                message.error('提交适配器失败');
+            })
+            .onComplete(() => {
+                submitting.value = false;
+            });
+    });
 };
 
 const handleEditingChange = (adapterId: number, isEditing: boolean) => {

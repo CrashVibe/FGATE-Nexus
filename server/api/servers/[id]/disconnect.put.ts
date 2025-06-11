@@ -4,10 +4,12 @@ export default defineEventHandler(async (event) => {
     const serverId = getRouterParam(event, 'id');
 
     if (!serverId) {
-        throw createError({
-            statusCode: 400,
-            statusMessage: '服务器ID无效'
-        });
+        event.node.res.statusCode = 400;
+        return {
+            success: false,
+            message: '服务器ID无效',
+            data: undefined
+        };
     }
 
     try {
@@ -17,19 +19,24 @@ export default defineEventHandler(async (event) => {
         if (result.success) {
             return {
                 success: true,
-                message: '服务器连接已断开'
+                message: '服务器连接已断开',
+                data: undefined
             };
         } else {
-            throw createError({
-                statusCode: 500,
-                statusMessage: result.error || '断开连接失败'
-            });
+            event.node.res.statusCode = 422;
+            return {
+                success: false,
+                message: result.error || '断开连接失败',
+                data: undefined
+            };
         }
     } catch (error) {
+        event.node.res.statusCode = 500;
         console.error('断开服务器连接失败:', error);
-        throw createError({
-            statusCode: 500,
-            statusMessage: '断开连接失败'
-        });
+        return {
+            success: false,
+            message: '断开服务器连接失败',
+            data: undefined
+        };
     }
 });

@@ -61,7 +61,7 @@ const getCurrentServerId = () => {
 
 const menuOptions = computed(() => {
     const serverId = getCurrentServerId();
-    const menu: any[] = [];
+    const menu: Array<{ label: string; key: string; icon: ReturnType<typeof renderIcon> }> = [];
 
     menu.push({
         label: '返回服务器管理',
@@ -73,6 +73,12 @@ const menuOptions = computed(() => {
         menu.push({
             label: '配置总览',
             key: `/servers/${serverId}/config`,
+            icon: renderIcon(SettingsOutline)
+        });
+
+        menu.push({
+            label: '账号绑定',
+            key: `/servers/${serverId}/binding`,
             icon: renderIcon(SettingsOutline)
         });
 

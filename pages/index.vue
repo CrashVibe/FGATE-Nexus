@@ -2,7 +2,8 @@
 import { AddCircleOutline, RefreshOutline } from '@vicons/ionicons5';
 import { v4 as uuidv4 } from 'uuid';
 import ServerCard from '~/components/Card/ServerCard.vue';
-import type { ServerWithStatus } from '~/server/shared/types/server/api';
+import type {  ServerWithStatus } from '~/server/shared/types/server/api';
+import { useRequest } from 'alova/client';
 
 const { serverApi } = useApi();
 
@@ -13,7 +14,7 @@ interface FormData {
 
 const showModal = ref(false);
 const submitting = ref(false);
-const formRef = ref<any>(null);
+const formRef = ref<HTMLFormElement | null>(null);
 const message = useMessage();
 
 const formData = ref<FormData>({
@@ -42,28 +43,30 @@ watch(showModal, (newVal) => {
     }
 });
 
-const handleSubmit = async (e: Event) => {
+const handleSubmit = (e: Event) => {
     e.preventDefault();
     submitting.value = true;
-
-    try {
-        const addserver: any = await serverApi.addServer({
+    useRequest(
+        serverApi.addServer({
             name: formData.value.servername,
             token: formData.value.token
+        })
+    )
+        .onSuccess(({ data }) => {
+            if (data.success) {
+                message.success(data.message);
+                handleClose();
+                getServerList();
+            } else {
+                message.error(data.message || '添加服务器失败');
+            }
+        })
+        .onError(() => {
+            message.error('添加服务器失败');
+        })
+        .onComplete(() => {
+            submitting.value = false;
         });
-
-        if (addserver.success) {
-            message.success(addserver.message);
-            handleClose();
-            getServerList();
-        } else {
-            message.error(addserver.message);
-        }
-    } catch (error) {
-        message.error('添加服务器失败');
-        console.error('添加服务器失败:', error);
-    }
-    submitting.value = false;
 };
 
 const handleClose = () => {
@@ -75,44 +78,47 @@ const generateToken = () => {
 };
 
 const refreshing = ref(false);
-const handleRefresh = async () => {
+const handleRefresh = () => {
     refreshing.value = true;
-    try {
-        await getServerList();
-        message.success('刷新成功');
-    } catch {
-        message.error('刷新失败');
-    } finally {
-        refreshing.value = false;
-    }
+    useRequest(serverApi.getServerList())
+        .onSuccess(() => {
+            getServerList();
+            message.success('刷新成功');
+        })
+        .onError(() => {
+            message.error('刷新失败');
+        })
+        .onComplete(() => {
+            refreshing.value = false;
+        });
 };
 
 const serverList = ref<ServerWithStatus[]>([]);
 const refreshTimer = ref<NodeJS.Timeout | null>(null);
 const lastUpdateTime = ref<string>('');
 
-async function getServerList() {
-    try {
-        const res = await serverApi.getServerList();
-        if (res.success) {
-            serverList.value = res.data;
-            lastUpdateTime.value = new Date().toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            console.log('服务器列表:', res.data);
-        } else {
-            console.error('出错了:', res.message);
-        }
-        return res;
-    } catch (error) {
-        console.error('获取服务器列表失败:', error);
-        return { success: false, message: '获取服务器列表失败' };
-    }
+function getServerList() {
+    useRequest(serverApi.getServerList())
+        .onSuccess(({ data }) => {
+            if (data.success && data.data) {
+                serverList.value = data.data as ServerWithStatus[];
+                lastUpdateTime.value = new Date().toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                console.log('服务器列表:', data.data);
+            } else {
+                message.error(data.message || '获取服务器列表失败');
+            }
+        })
+        .onError((event) => {
+            // @ts-expect-error alova event.data 结构类型推断不全
+            message.error(event.data?.message || '获取服务器列表失败');
+        });
 }
 
 const onBeforeCardEnter = (el: Element) => {

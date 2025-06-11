@@ -1,6 +1,6 @@
-import type { AdapterActionResponse } from '@/server/shared/types/adapters/api';
 import { dispatchToAdapter } from '~/server/handlers/adapters/adapterDispatcher';
-export default defineEventHandler(async (event): Promise<AdapterActionResponse> => {
+import type { ApiResponse } from '~/server/shared/types/server/api';
+export default defineEventHandler(async (event): Promise<ApiResponse<unknown>> => {
     const id = Number(getRouterParam(event, 'id'));
     if (isNaN(id)) {
         return {

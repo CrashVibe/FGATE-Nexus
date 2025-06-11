@@ -6,10 +6,12 @@ export default defineEventHandler(async (event) => {
     const serverId = Number(getRouterParam(event, 'id'));
 
     if (!serverId) {
-        throw createError({
-            statusCode: 400,
-            statusMessage: 'Invalid server ID'
-        });
+        event.node.res.statusCode = 400;
+        return {
+            success: false,
+            message: 'Invalid server ID',
+            data: undefined
+        };
     }
 
     try {
@@ -19,7 +21,10 @@ export default defineEventHandler(async (event) => {
         const playerRows = await db.select().from(players);
         for (const p of playerRows) {
             if (!p.servers) continue;
-            const list = p.servers.split(',').map((id) => Number(id)).filter(Boolean);
+            const list = p.servers
+                .split(',')
+                .map((id) => Number(id))
+                .filter(Boolean);
             const filtered = list.filter((id) => id !== serverId);
             if (filtered.length !== list.length) {
                 await db
@@ -33,13 +38,16 @@ export default defineEventHandler(async (event) => {
 
         return {
             success: true,
-            message: 'Server deleted successfully'
+            message: 'Server deleted successfully',
+            data: undefined
         };
     } catch (error) {
+        event.node.res.statusCode = 500;
         console.error('Failed to delete server:', error);
-        throw createError({
-            statusCode: 500,
-            statusMessage: 'Internal server error'
-        });
+        return {
+            success: false,
+            message: '删除服务器失败: ' + String(error),
+            data: undefined
+        };
     }
 });

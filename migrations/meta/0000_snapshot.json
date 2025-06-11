@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "ae8e1b62-8ff5-4dcd-accb-e76c527cbbe7",
+  "id": "750fdd7c-23b6-4e35-8035-a072f1f8f1c7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "advanced_configs": {
@@ -128,9 +128,9 @@
           "notNull": false,
           "autoincrement": false
         },
-        "social_accounts": {
-          "name": "social_accounts",
-          "type": "text",
+        "social_account_id": {
+          "name": "social_account_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -168,7 +168,21 @@
           "isUnique": true
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "players_social_account_id_social_accounts_id_fk": {
+          "name": "players_social_account_id_social_accounts_id_fk",
+          "tableFrom": "players",
+          "tableTo": "social_accounts",
+          "columnsFrom": [
+            "social_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

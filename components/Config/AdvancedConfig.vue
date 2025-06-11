@@ -51,6 +51,8 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useMessage, useDialog } from 'naive-ui';
 import { useRouter } from 'vue-router';
+import { useRequest } from 'alova/client';
+import type { ServerWithStatus } from '~/server/shared/types/server/api';
 
 const props = defineProps<{
     serverId: number;
@@ -61,26 +63,33 @@ const dialog = useDialog();
 const router = useRouter();
 const { serverApi } = useApi();
 
-const serverStatus = ref({
+const serverStatus = ref<ServerWithStatus>({
     isOnline: false,
     playerCount: 0,
-    lastSeen: null as Date | null,
+    lastSeen: null,
     supportsRcon: false,
+    supportsPapi: false,
     software: '',
-    version: ''
+    version: '',
+    id: 0,
+    name: '',
+    token: ''
 });
 
 const operating = ref(false);
 
-const fetchServerStatus = async () => {
-    try {
-        const response: any = await serverApi.getServerStatus(props.serverId);
-        if (response.success) {
-            Object.assign(serverStatus.value, response.data);
-        }
-    } catch (error) {
-        console.error('获取服务器状态失败:', error);
-    }
+const fetchServerStatus = () => {
+    useRequest(serverApi.getServerStatus(props.serverId))
+        .onSuccess(({ data }) => {
+            if (data.success && data.data) {
+                Object.assign(serverStatus.value, data.data);
+            } else {
+                message.error(data.message || '获取服务器状态失败');
+            }
+        })
+        .onError(() => {
+            message.error('获取服务器状态失败');
+        });
 };
 
 const forceDisconnect = () => {
@@ -89,18 +98,23 @@ const forceDisconnect = () => {
         content: '此操作将断开与服务器的连接，服务器将显示为离线状态。',
         positiveText: '确认',
         negativeText: '取消',
-        onPositiveClick: async () => {
+        onPositiveClick: () => {
             operating.value = true;
-            try {
-                await serverApi.disconnectServer(props.serverId);
-                message.success('连接已断开');
-                await fetchServerStatus();
-            } catch (error) {
-                console.error('断开连接失败:', error);
-                message.error('断开连接失败');
-            } finally {
-                operating.value = false;
-            }
+            useRequest(serverApi.disconnectServer(props.serverId))
+                .onSuccess(({ data }) => {
+                    if (data.success) {
+                        message.success('连接已断开');
+                        fetchServerStatus();
+                    } else {
+                        message.error(data.message || '断开连接失败');
+                    }
+                })
+                .onError(() => {
+                    message.error('断开连接失败');
+                })
+                .onComplete(() => {
+                    operating.value = false;
+                });
         }
     });
 };
@@ -111,18 +125,23 @@ const deleteServer = () => {
         content: '此操作将永久删除服务器及其所有数据，是否继续？',
         positiveText: '确认删除',
         negativeText: '取消',
-        onPositiveClick: async () => {
+        onPositiveClick: () => {
             operating.value = true;
-            try {
-                await serverApi.deleteServer(props.serverId);
-                message.success('服务器删除成功');
-                router.push('/');
-            } catch (error) {
-                console.error('删除服务器失败:', error);
-                message.error('删除服务器失败');
-            } finally {
-                operating.value = false;
-            }
+            useRequest(serverApi.deleteServer(props.serverId))
+                .onSuccess(({ data }) => {
+                    if (data.success) {
+                        message.success('服务器删除成功');
+                        router.push('/');
+                    } else {
+                        message.error(data.message || '删除服务器失败');
+                    }
+                })
+                .onError(() => {
+                    message.error('删除服务器失败');
+                })
+                .onComplete(() => {
+                    operating.value = false;
+                });
         }
     });
 };
@@ -141,8 +160,8 @@ const formatTime = (date: Date | null) => {
 
 let statusInterval: ReturnType<typeof setInterval> | null = null;
 
-onMounted(async () => {
-    await fetchServerStatus();
+onMounted(() => {
+    fetchServerStatus();
     statusInterval = setInterval(fetchServerStatus, 5000);
 });
 

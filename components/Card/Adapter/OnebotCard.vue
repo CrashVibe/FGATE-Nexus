@@ -89,7 +89,6 @@
 import { ref, watch } from 'vue';
 import { useMessage, useDialog } from 'naive-ui';
 import type { onebot_adapters } from '@/server/shared/types/adapters/adapter';
-import type { AdapterActionResponse } from '@/server/shared/types/adapters/api';
 import { EyeOutline, EyeOff } from '@vicons/ionicons5';
 import { useRequest } from 'alova/client';
 const { $serverAPI } = useNuxtApp();
@@ -147,30 +146,27 @@ const emit = defineEmits<{
 
 async function saveEdit() {
     loading.value = true;
-    try {
-        // 调用 PUT /adapters/[id] 更新接口
-        useRequest($serverAPI.Put<AdapterActionResponse>(`/adapters/${props.adapter.id}`, editForm.value))
-            .onSuccess(async (response) => {
-                if (response.data.success) {
-                    message.success(response.data.message || '适配器更新成功');
-                } else {
-                    message.error(response.data.message || '提交适配器失败');
-                }
-                isEditing.value = false;
-                emit('editing-change', props.adapter.id, false);
-                emit('update', {
-                    ...props.adapter,
-                    ...editForm.value
-                });
-            })
-            .onError((err) => {
-                message.error(`提交适配器失败：${err.error || '未知错误'}`);
+    useRequest($serverAPI.Put(`/adapters/${props.adapter.id}`, editForm.value))
+        .onSuccess((response) => {
+            const data = response.data as { success: boolean; message: string };
+            if (data.success) {
+                message.success(data.message || '适配器更新成功');
+            } else {
+                message.error(data.message || '提交适配器失败');
+            }
+            isEditing.value = false;
+            emit('editing-change', props.adapter.id, false);
+            emit('update', {
+                ...props.adapter,
+                ...editForm.value
             });
-    } catch (err: any) {
-        message.error(`更新异常：${err.message || '未知错误'}`);
-    } finally {
-        loading.value = false;
-    }
+        })
+        .onError((err) => {
+            message.error(`提交适配器失败：${err.error || '未知错误'}`);
+        })
+        .onComplete(() => {
+            loading.value = false;
+        });
 }
 
 function cancelEdit() {
@@ -193,30 +189,28 @@ function deleteAdapter() {
         content: `确定要删除适配器 "${props.adapter.botId}" 吗？此操作不可撤销。`,
         positiveText: '删除',
         negativeText: '取消',
-        onPositiveClick: async () => {
+        onPositiveClick: () => {
             loading.value = true;
-            try {
-                useRequest(
-                    $serverAPI.Delete<AdapterActionResponse>(`/adapters/${props.adapter.id}`, {
-                        adapter_type: 'onebot'
-                    })
-                )
-                    .onSuccess(async (response) => {
-                        if (response.data.success) {
-                            message.success(response.data.message || '适配器删除成功');
-                            emit('delete', props.adapter.id);
-                        } else {
-                            message.error(response.data.message || '删除适配器失败');
-                        }
-                    })
-                    .onError((err) => {
-                        message.error(`删除适配器失败：${err.error || '未知错误'}`);
-                    });
-            } catch (err: any) {
-                message.error(`删除异常：${err.message || '未知错误'}`);
-            } finally {
-                loading.value = false;
-            }
+            useRequest(
+                $serverAPI.Delete(`/adapters/${props.adapter.id}`, {
+                    adapter_type: 'onebot'
+                })
+            )
+                .onSuccess((response) => {
+                    const data = response.data as { success: boolean; message: string };
+                    if (data.success) {
+                        message.success(data.message || '适配器删除成功');
+                        emit('delete', props.adapter.id);
+                    } else {
+                        message.error(data.message || '删除适配器失败');
+                    }
+                })
+                .onError((err) => {
+                    message.error(`删除适配器失败：${err.error || '未知错误'}`);
+                })
+                .onComplete(() => {
+                    loading.value = false;
+                });
         }
     });
 }

@@ -47,6 +47,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useMessage } from 'naive-ui';
+import { useRequest } from 'alova/client';
+import type { ServerWithStatus } from '~/server/shared/types/server/api';
 
 const props = defineProps<{
     serverId: number;
@@ -60,42 +62,53 @@ const generalConfig = ref({
     token: ''
 });
 
-const serverStatus = ref<any>(null);
+const serverStatus = ref<ServerWithStatus | null>(null);
 const saving = ref(false);
 
-const fetchGeneralConfig = async () => {
-    try {
-        const response: any = await serverApi.getServer(props.serverId);
-        if (response.data) {
-            generalConfig.value = {
-                name: response.data.name || '',
-                token: response.data.token || ''
-            };
-            serverStatus.value = response.data;
-        }
-    } catch (error) {
-        console.error('获取基本配置失败:', error);
-        message.error('获取基本配置失败');
-    }
-};
-
-const saveGeneralConfig = async () => {
-    saving.value = true;
-    try {
-        await serverApi.updateServer(props.serverId, {
-            name: generalConfig.value.name
+const fetchGeneralConfig = () => {
+    useRequest(serverApi.getServer(props.serverId))
+        .onSuccess(({ data }) => {
+            if (data.success && data.data) {
+                generalConfig.value = {
+                    name: data.data.name || '',
+                    token: data.data.token || ''
+                };
+                serverStatus.value = data.data;
+            } else {
+                message.error(data.message || '获取基本配置失败');
+            }
+        })
+        .onError((error) => {
+            message.error('获取基本配置失败');
+            console.error('获取基本配置失败:', error);
         });
-        message.success('基本配置保存成功');
-    } catch (error) {
-        console.error('保存基本配置失败:', error);
-        message.error('保存基本配置失败');
-    } finally {
-        saving.value = false;
-    }
 };
 
-onMounted(async () => {
-    await fetchGeneralConfig();
+const saveGeneralConfig = () => {
+    saving.value = true;
+    useRequest(
+        serverApi.updateServer(props.serverId, {
+            name: generalConfig.value.name
+        })
+    )
+        .onSuccess(({ data }) => {
+            if (data.success) {
+                message.success('基本配置保存成功');
+            } else {
+                message.error(data.message || '保存基本配置失败');
+            }
+        })
+        .onError((error) => {
+            message.error('保存基本配置失败');
+            console.error('保存基本配置失败:', error);
+        })
+        .onComplete(() => {
+            saving.value = false;
+        });
+};
+
+onMounted(() => {
+    fetchGeneralConfig();
 });
 </script>
 

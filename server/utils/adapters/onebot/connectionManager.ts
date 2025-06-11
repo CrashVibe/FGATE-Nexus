@@ -30,9 +30,11 @@ class ConnectionManager {
         if (info) {
             try {
                 info.peer.close(4000, 'adapter disabled or removed');
+                console.log(`Closed connection for bot ${botId}`);
             } catch {
                 // ignore
             }
+            console.log(`Disconnected bot ${botId}`);
             this.connections.delete(botId);
         }
     }

@@ -1,11 +1,1 @@
-import type { onebot_adapters } from './adapter';
-
-export interface AdapterResponse<T = void> {
-    success: boolean;
-    message: string;
-    data?: T;
-}
-
-// 特定类型的响应
-export type AdapterListResponse = AdapterResponse<onebot_adapters[]>;
-export type AdapterActionResponse = AdapterResponse;
+// 已废弃，所有响应类型请直接从 '~/server/shared/types/server/api' 导入

@@ -7,27 +7,31 @@ export default defineEventHandler(async (event) => {
     const serverId = Number(getRouterParam(event, 'id'));
 
     if (!serverId) {
-        throw createError({
-            statusCode: 400,
-            statusMessage: 'Invalid server ID'
-        });
+        event.node.res.statusCode = 400;
+        return {
+            success: false,
+            message: 'Invalid server ID',
+            data: undefined
+        };
     }
 
     try {
         const server = await db.select().from(servers).where(eq(servers.id, serverId)).limit(1);
 
         if (server.length === 0) {
-            throw createError({
-                statusCode: 404,
-                statusMessage: 'Server not found'
-            });
+            event.node.res.statusCode = 404;
+            return {
+                success: false,
+                message: 'Server not found',
+                data: undefined
+            };
         }
 
         // 获取服务器在线状态
         let serverStatus = {
             isOnline: false,
             playerCount: 0,
-            lastSeen: null,
+            lastSeen: null as Date | null,
             supportsRcon: false,
             software: server[0].software || 'Unknown',
             version: server[0].version || 'Unknown'
@@ -51,16 +55,19 @@ export default defineEventHandler(async (event) => {
 
         return {
             success: true,
+            message: '获取服务器信息成功',
             data: {
                 ...server[0],
                 ...serverStatus
             }
         };
     } catch (error) {
+        event.node.res.statusCode = 500;
         console.error('Failed to fetch server:', error);
-        throw createError({
-            statusCode: 500,
-            statusMessage: 'Internal server error'
-        });
+        return {
+            success: false,
+            message: '获取服务器信息失败: ' + String(error),
+            data: undefined
+        };
     }
 });

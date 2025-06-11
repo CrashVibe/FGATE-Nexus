@@ -1,7 +1,7 @@
 import type { H3Event } from 'h3';
-import type { AdapterActionResponse } from '@/server/shared/types/adapters/api';
+import type { ApiResponse } from '~/server/shared/types/server/api';
 
-export async function handlePut(event: H3Event): Promise<AdapterActionResponse> {
+export async function handlePut(event: H3Event): Promise<ApiResponse<unknown>> {
     const body = await readBody(event);
     const id = Number(getRouterParam(event, 'id'));
 
@@ -30,8 +30,8 @@ export async function handlePut(event: H3Event): Promise<AdapterActionResponse> 
             success: true,
             message: '适配器更新成功'
         };
-    } catch (error: any) {
-        if (error.message.includes('UNIQUE constraint failed')) {
+    } catch (error) {
+        if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
             event.node.res.statusCode = 409;
             return {
                 success: false,

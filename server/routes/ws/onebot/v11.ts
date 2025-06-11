@@ -35,6 +35,7 @@ export default defineWebSocketHandler({
         console.log('OneBot message:', message.text());
     },
     close(peer) {
+        console.log('OneBot connection closed:', peer.id);
         const idHeader = peer.request.headers.get('x-self-id');
         if (idHeader) {
             onebotConnectionManager.remove(Number(idHeader));

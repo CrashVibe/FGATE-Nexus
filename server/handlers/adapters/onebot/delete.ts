@@ -1,8 +1,8 @@
 import type { H3Event } from 'h3';
-import type { AdapterActionResponse } from '@/server/shared/types/adapters/api';
+import type { ApiResponse } from '~/server/shared/types/server/api';
 import { adapterManager } from '@/server/utils/adapters/adapterManager';
 
-export async function handleDelete(event: H3Event): Promise<AdapterActionResponse> {
+export async function handleDelete(event: H3Event): Promise<ApiResponse<unknown>> {
     const id = Number(getRouterParam(event, 'id'));
 
     try {
@@ -19,7 +19,7 @@ export async function handleDelete(event: H3Event): Promise<AdapterActionRespons
             success: true,
             message: '适配器删除成功'
         };
-    } catch (error: any) {
+    } catch (error) {
         console.error('删除适配器时发生错误:', error);
         event.node.res.statusCode = 500;
         return {

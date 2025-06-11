@@ -3,7 +3,7 @@ import { db } from '@/server/database/client';
 import { servers } from '@/server/database/schema';
 import { WebSocketManager } from '@/server/utils/websocket-manager';
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
     try {
         const result = await db.select().from(servers);
         const wsManager = WebSocketManager.getInstance();
@@ -16,12 +16,15 @@ export default defineEventHandler(async () => {
 
         return {
             success: true,
+            message: '获取服务器列表成功',
             data: serversWithStatus
         };
     } catch (err) {
+        event.node.res.statusCode = 500;
         return {
             success: false,
-            message: '获取服务器列表失败: ' + String(err)
+            message: '获取服务器列表失败: ' + String(err),
+            data: undefined
         };
     }
 });

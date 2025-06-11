@@ -8,7 +8,9 @@
                         <n-space justify="space-between" align="center">
                             <div>
                                 <n-text tag="h1" style="font-size: 24px; margin: 0">高级配置</n-text>
-                                <n-text depth="3">{{ serverData?.data?.name }}</n-text>
+                                <n-text depth="3">{{
+                                    serverData?.success && serverData.data ? serverData.data.name : ''
+                                }}</n-text>
                             </div>
                             <n-button quaternary @click="goBack">
                                 <template #icon>
@@ -28,10 +30,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ArrowBackOutline } from '@vicons/ionicons5';
 import AdvancedConfig from '~/components/Config/AdvancedConfig.vue';
+import { useRequest } from 'alova/client';
+import { useMessage } from 'naive-ui';
+import type { ApiResponse, ServerWithStatus } from '~/server/shared/types/server/api';
 
 definePageMeta({
     layout: 'servere-edit'
@@ -42,7 +47,21 @@ const router = useRouter();
 const serverId = computed(() => Number(route.params.id));
 const { serverApi } = useApi();
 
-const serverData: any = await serverApi.getServer(serverId.value);
+const serverData = ref<ApiResponse<ServerWithStatus> | null>(null);
+const loading = ref(true);
+const message = useMessage();
+
+useRequest(serverApi.getServer(serverId.value))
+    .onSuccess(({ data }) => {
+        serverData.value = data;
+    })
+    .onError((event) => {
+        // @ts-expect-error alova event.data 结构类型推断不全
+        message.error(event.data?.message || '获取服务器信息失败');
+    })
+    .onComplete(() => {
+        loading.value = false;
+    });
 
 const goBack = () => {
     router.push('/');

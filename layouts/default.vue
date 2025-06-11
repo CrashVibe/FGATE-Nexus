@@ -17,7 +17,7 @@
             </n-space>
         </n-layout-header>
         <n-layout has-sider bordered class="sec_layout">
-            <n-layout-sider v-if="showSider" bordered show-trigger :native-scrollbar="false" collapse-mode="width">
+            <n-layout-sider v-if="showSider" bordered show-trigger :native-scrollbar="false" collapse-mode="width" :width="200">
                 <n-menu
                     :key="selectedKey"
                     :options="menuOptions"

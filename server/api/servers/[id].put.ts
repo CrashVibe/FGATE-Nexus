@@ -7,10 +7,12 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event);
 
     if (!serverId) {
-        throw createError({
-            statusCode: 400,
-            statusMessage: 'Invalid server ID'
-        });
+        event.node.res.statusCode = 400;
+        return {
+            success: false,
+            message: 'Invalid server ID',
+            data: undefined
+        };
     }
 
     try {
@@ -24,13 +26,16 @@ export default defineEventHandler(async (event) => {
 
         return {
             success: true,
-            message: 'Server updated successfully'
+            message: 'Server updated successfully',
+            data: undefined
         };
     } catch (error) {
+        event.node.res.statusCode = 500;
         console.error('Failed to update server:', error);
-        throw createError({
-            statusCode: 500,
-            statusMessage: 'Internal server error'
-        });
+        return {
+            success: false,
+            message: '更新服务器失败: ' + String(error),
+            data: undefined
+        };
     }
 });

@@ -19,10 +19,11 @@ CREATE TABLE `players` (
 	`name` text NOT NULL,
 	`uuid` text NOT NULL,
 	`ip` text,
-	`social_accounts` text,
+	`social_account_id` integer,
 	`servers` text,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL
+	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	FOREIGN KEY (`social_account_id`) REFERENCES `social_accounts`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `player_uuid_idx` ON `players` (`uuid`);--> statement-breakpoint

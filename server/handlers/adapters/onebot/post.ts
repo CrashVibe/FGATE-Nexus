@@ -1,7 +1,7 @@
 import type { H3Event } from 'h3';
-import type { AdapterActionResponse } from '@/server/shared/types/adapters/api';
+import type { ApiResponse } from '~/server/shared/types/server/api';
 
-export async function handlePost(event: H3Event): Promise<AdapterActionResponse> {
+export async function handlePost(event: H3Event): Promise<ApiResponse<unknown>> {
     const body = await readBody(event);
     if (!body.adapter_type || !body.config.botId) {
         event.node.res.statusCode = 400;
@@ -41,8 +41,8 @@ export async function handlePost(event: H3Event): Promise<AdapterActionResponse>
             success: true,
             message: '创建成功！'
         };
-    } catch (error: any) {
-        if (error.message.includes('UNIQUE constraint failed')) {
+    } catch (error) {
+        if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
             event.node.res.statusCode = 409;
             return {
                 success: false,
@@ -52,7 +52,7 @@ export async function handlePost(event: H3Event): Promise<AdapterActionResponse>
         event.node.res.statusCode = 500;
         return {
             success: false,
-            message: `创建适配器失败：${error.message || '未知错误'}`
+            message: `创建适配器失败：${error instanceof Error ? error.message : '未知错误'}`
         };
     }
 }
