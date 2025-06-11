@@ -4,12 +4,16 @@ import Components from 'unplugin-vue-components/vite';
 
 export default defineNuxtConfig({
     compatibilityDate: 'latest',
-    devtools: { enabled: true },
+    devtools: { enabled: process.env.NODE_ENV !== 'production' },
     ssr: false,
     runtimeConfig: {
         public: {
             commitHash: process.env.NUXT_PUBLIC_COMMIT_HASH || undefined
         }
+    },
+    experimental: {
+        asyncEntry: true,
+        writeEarlyHints: true
     },
     devServer: {
         host: '0.0.0.0',
@@ -17,6 +21,23 @@ export default defineNuxtConfig({
     },
     modules: ['nuxtjs-naive-ui'],
     vite: {
+        cacheDir: 'node_modules/.vite_cache',
+        optimizeDeps: {
+            include: ['naive-ui', 'vue', 'vue-router'],
+            esbuildOptions: {
+                target: 'esnext',
+                keepNames: true
+            }
+        },
+        build: {
+            target: 'esnext',
+            minify: process.env.NODE_ENV === 'production' ? 'esbuild' : false,
+            cssCodeSplit: true,
+            sourcemap: process.env.NODE_ENV !== 'production'
+        },
+        esbuild: {
+            target: 'esnext'
+        },
         plugins: [
             AutoImport({
                 imports: [
@@ -46,8 +67,8 @@ export default defineNuxtConfig({
         },
         preset: 'bun',
         serveStatic: 'inline',
-        minify: true,
-        compressPublicAssets: true,
+        minify: process.env.NODE_ENV === 'production',
+        compressPublicAssets: process.env.NODE_ENV === 'production',
         inlineDynamicImports: true,
         externals: {
             inline: ['vue', '@vue/shared', '@vue/runtime-dom']
@@ -58,8 +79,6 @@ export default defineNuxtConfig({
         }
     },
     build: {
-        transpile: [
-            '@vue/compiler-dom'
-        ]
+        transpile: ['@vue/compiler-dom']
     }
 });
