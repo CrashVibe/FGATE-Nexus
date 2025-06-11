@@ -137,9 +137,13 @@ class AdapterWebSocketServerManager {
         // 安全关闭连接
         wss.clients.forEach((client) => {
             try {
-                // 检查连接状态，避免重复关闭
-                if (client.readyState === client.OPEN || client.readyState === client.CONNECTING) {
-                    client.terminate();
+                // 检查连接状态
+                if (client.readyState === client.OPEN) {
+                    client.close();
+                } else if (client.readyState === client.CONNECTING) {
+                    // 正在连接的客户端，等待连接完后再关闭
+                    client.once('open', () => client.close());
+                    client.once('error', () => {}); // 忽略错误
                 }
             } catch (error) {
                 console.warn(`关闭客户端连接时出错:`, error);
@@ -262,9 +266,13 @@ class AdapterWebSocketServerManager {
                 // 安全终止连接
                 wss.clients.forEach((client) => {
                     try {
-                        // 检查连接状态，避免重复关闭
-                        if (client.readyState === client.OPEN || client.readyState === client.CONNECTING) {
-                            client.terminate();
+                        // 检查连接状态，优雅关闭
+                        if (client.readyState === client.OPEN) {
+                            client.close();
+                        } else if (client.readyState === client.CONNECTING) {
+                            // 对于正在连接的客户端，等待连接完成后再关闭
+                            client.once('open', () => client.close());
+                            client.once('error', () => {}); // 忽略错误
                         }
                     } catch (error) {
                         console.warn(`关闭客户端连接时出错:`, error);
@@ -309,9 +317,24 @@ class AdapterWebSocketServerManager {
                 const closePromises = Array.from(wss.clients).map((client) => {
                     return new Promise<void>((resolve) => {
                         try {
-                            // 检查连接状态，避免重复关闭
-                            if (client.readyState === client.OPEN || client.readyState === client.CONNECTING) {
-                                client.terminate();
+                            // 检查连接状态，优雅关闭
+                            if (client.readyState === client.OPEN) {
+                                client.close();
+                            } else if (client.readyState === client.CONNECTING) {
+                                // 对于正在连接的客户端，先设置监听器再终止
+                                client.once('open', () => client.close());
+                                client.once('error', () => resolve());
+                                setTimeout(() => {
+                                    try {
+                                        if (client.readyState !== client.CLOSED) {
+                                            client.terminate();
+                                        }
+                                    } catch (err) {
+                                        // 忽略错误
+                                    }
+                                    resolve();
+                                }, 100);
+                                return;
                             }
                             resolve();
                         } catch (error) {
