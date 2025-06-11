@@ -4,7 +4,7 @@ import Components from 'unplugin-vue-components/vite';
 
 export default defineNuxtConfig({
     compatibilityDate: 'latest',
-    devtools: { enabled: process.env.NODE_ENV !== 'production' },
+    devtools: { enabled: true },
     ssr: false,
     runtimeConfig: {
         public: {
@@ -31,9 +31,9 @@ export default defineNuxtConfig({
         },
         build: {
             target: 'esnext',
-            minify: process.env.NODE_ENV === 'production' ? 'esbuild' : false,
+            minify: true,
             cssCodeSplit: true,
-            sourcemap: process.env.NODE_ENV !== 'production'
+            sourcemap: true
         },
         esbuild: {
             target: 'esnext'
@@ -67,8 +67,8 @@ export default defineNuxtConfig({
         },
         preset: 'bun',
         serveStatic: 'inline',
-        minify: process.env.NODE_ENV === 'production',
-        compressPublicAssets: process.env.NODE_ENV === 'production',
+        minify: true,
+        compressPublicAssets: true,
         inlineDynamicImports: true,
         externals: {
             inline: ['vue', '@vue/shared', '@vue/runtime-dom']

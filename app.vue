@@ -1,16 +1,12 @@
 <script setup lang="ts">
 import { darkTheme, lightTheme } from 'naive-ui';
-import { ref, watchEffect, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import './assets/css/index.less';
 import { useDark } from '@vueuse/core';
 
 const isDark = useDark();
 
-const theme = ref(isDark.value ? darkTheme : lightTheme);
-
-watchEffect(() => {
-    theme.value = isDark.value ? darkTheme : lightTheme;
-});
+const theme = isDark.value ? darkTheme : lightTheme;
 
 const themeOverrides = {
     Card: {
@@ -65,7 +61,6 @@ onMounted(() => {
                 safeCall('error');
                 isNavigating = false;
             });
-
 
             setTimeout(() => {
                 if (safeCall('start')) {

@@ -22,7 +22,6 @@ const editingAdapters = ref<Set<number>>(new Set());
 const defaultOneBotConfig: AdapterFormData['config']['onebot'] = {
     botId: null,
     accessToken: null,
-    listenPath: '/onebot/v11/ws',
     responseTimeout: 6000,
     enabled: true
 };
@@ -41,7 +40,6 @@ const currentRules = computed(() => {
         return {
             ...baseRules,
             'config.onebot.botId': onebotRules.botId,
-            'config.onebot.listenPath': onebotRules.listenPath,
             'config.onebot.responseTimeout': onebotRules.responseTimeout
         };
     }
@@ -134,7 +132,6 @@ const handleSubmit = async (e: Event) => {
             payload.config = {
                 ...data,
                 botId: data.botId,
-                listenPath: data.listenPath?.trim(),
                 accessToken: data.accessToken?.trim() || null,
                 responseTimeout: data.responseTimeout || 6000,
                 enabled: data.enabled ?? true
@@ -251,13 +248,6 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
                                         placeholder="请输入访问令牌（可选）"
                                         type="password"
                                         show-password-on="click"
-                                        style="width: 100%"
-                                    />
-                                </n-form-item>
-                                <n-form-item label="监听路径" path="config.onebot.listenPath">
-                                    <n-input
-                                        v-model:value="formData.config.onebot.listenPath"
-                                        placeholder="例如：/onebot"
                                         style="width: 100%"
                                     />
                                 </n-form-item>

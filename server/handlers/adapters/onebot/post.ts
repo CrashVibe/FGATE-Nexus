@@ -3,7 +3,7 @@ import type { AdapterActionResponse } from '@/server/shared/types/adapters/api';
 
 export async function handlePost(event: H3Event): Promise<AdapterActionResponse> {
     const body = await readBody(event);
-    if (!body.adapter_type || !body.config.botId || !body.config.listenPath) {
+    if (!body.adapter_type || !body.config.botId) {
         event.node.res.statusCode = 400;
         if (!body.adapter_type) {
             return {
@@ -15,12 +15,6 @@ export async function handlePost(event: H3Event): Promise<AdapterActionResponse>
             return {
                 success: false,
                 message: '缺少必填字段：botId'
-            };
-        }
-        if (!body.config.listenPath) {
-            return {
-                success: false,
-                message: '缺少必填字段：listenPath'
             };
         }
     }
@@ -39,7 +33,6 @@ export async function handlePost(event: H3Event): Promise<AdapterActionResponse>
             adapterType: body.adapter_type,
             botId: body.config.botId,
             accessToken: body.config.accessToken?.trim() || null,
-            listenPath: body.config.listenPath,
             responseTimeout: body.config.responseTimeout || 6000,
             enabled: body.config.enabled ?? true
         });

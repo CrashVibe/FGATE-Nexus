@@ -7,9 +7,6 @@
                         <n-form-item label="机器人 ID">
                             <n-input-number v-model:value="editForm.botId" />
                         </n-form-item>
-                        <n-form-item label="监听路径">
-                            <n-input v-model:value="editForm.listenPath" />
-                        </n-form-item>
                         <n-form-item label="响应超时（毫秒）">
                             <n-input-number v-model:value="editForm.responseTimeout" :min="1000" />
                         </n-form-item>
@@ -51,11 +48,6 @@
                     <div class="info-item">
                         <n-text depth="2">机器人ID：</n-text>
                         <n-text>{{ adapter.botId }}</n-text>
-                    </div>
-
-                    <div class="info-item">
-                        <n-text depth="2">监听路径：</n-text>
-                        <n-text>{{ adapter.listenPath }}</n-text>
                     </div>
 
                     <div class="info-item">
@@ -118,7 +110,6 @@ const editForm = ref({
     adapter_type: 'onebot',
     accessToken: props.adapter.accessToken || '',
     botId: props.adapter.botId,
-    listenPath: props.adapter.listenPath,
     responseTimeout: props.adapter.responseTimeout,
     enabled: props.adapter.enabled
 });
@@ -133,7 +124,6 @@ watch(
             adapter_type: 'onebot',
             accessToken: newVal.accessToken || '',
             botId: newVal.botId,
-            listenPath: newVal.listenPath,
             responseTimeout: newVal.responseTimeout,
             enabled: newVal.enabled
         };
@@ -192,7 +182,6 @@ function cancelEdit() {
         adapter_type: 'onebot',
         accessToken: props.adapter.accessToken || '',
         botId: props.adapter.botId,
-        listenPath: props.adapter.listenPath,
         responseTimeout: props.adapter.responseTimeout,
         enabled: props.adapter.enabled
     };

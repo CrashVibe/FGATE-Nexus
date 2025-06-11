@@ -21,7 +21,7 @@
     "dependencies": {
         "@vicons/ionicons5": "^0.13.0",
         "@vueuse/core": "^13.3.0",
-        "alova": "^3.3.0",
+        "alova": "^3.3.1",
         "crossws": "0.4.1",
         "dotenv": "^16.5.0",
         "drizzle-orm": "^0.44.2",
@@ -36,6 +36,7 @@
         "ws": "^8.18.2"
     },
     "devDependencies": {
+        "@libsql/client": "^0.15.9",
         "@types/bun": "latest",
         "@types/ws": "^8.18.1",
         "@vercel/ncc": "^0.38.3",
@@ -46,13 +47,5 @@
         "typescript": "^5.8.3",
         "unplugin-auto-import": "^19.3.0",
         "unplugin-vue-components": "^28.7.0"
-    },
-    "bun": {
-        "overrides": {
-            "crossws": "0.4.1"
-        }
-    },
-    "peerDependencies": {
-        "typescript": "^5"
     }
 }

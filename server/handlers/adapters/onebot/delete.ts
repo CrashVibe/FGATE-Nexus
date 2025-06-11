@@ -1,10 +1,9 @@
 import type { H3Event } from 'h3';
 import type { AdapterActionResponse } from '@/server/shared/types/adapters/api';
+import { adapterManager } from '@/server/utils/adapters/adapterManager';
 
 export async function handleDelete(event: H3Event): Promise<AdapterActionResponse> {
     const id = Number(getRouterParam(event, 'id'));
-
-    const { adapterManager } = await import('~/server/utils/adapters/adapterManager');
 
     try {
         const deletedAdapter = await adapterManager.deleteAdapter(id);
@@ -16,7 +15,6 @@ export async function handleDelete(event: H3Event): Promise<AdapterActionRespons
                 message: '找不到适配器啦，可能被数据纵火犯偷走了！'
             };
         }
-        await adapterManager.deleteAdapter(id);
         return {
             success: true,
             message: '适配器删除成功'

@@ -9,7 +9,6 @@ CREATE TABLE `onebot_adapters` (
 	`adapter_type` text NOT NULL,
 	`bot_id` integer NOT NULL,
 	`access_token` text,
-	`listen_path` text NOT NULL,
 	`response_timeout` integer NOT NULL,
 	`enabled` integer DEFAULT true NOT NULL
 );

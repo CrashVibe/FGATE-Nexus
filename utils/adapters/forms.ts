@@ -1,7 +1,6 @@
 export interface OneBotConfig {
     botId: number | null;
     accessToken: string | null;
-    listenPath: string;
     responseTimeout: number;
     enabled: boolean;
 }

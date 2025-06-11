@@ -7,11 +7,6 @@ export const onebotRules: FormRules = {
         message: '请输入Bot ID',
         trigger: ['blur', 'input']
     },
-    listenPath: {
-        required: true,
-        message: '请输入监听路径',
-        trigger: ['blur', 'input']
-    },
     responseTimeout: {
         required: true,
         type: 'number',

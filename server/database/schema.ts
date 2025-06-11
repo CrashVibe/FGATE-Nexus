@@ -13,7 +13,6 @@ export const onebot_adapters = sqliteTable('onebot_adapters', {
     adapterType: text('adapter_type').notNull(),
     botId: integer('bot_id').notNull().unique('bot_id_idx'),
     accessToken: text('access_token'),
-    listenPath: text('listen_path').notNull(),
     responseTimeout: integer('response_timeout').notNull(),
     enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true)
 });

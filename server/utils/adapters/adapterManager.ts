@@ -2,7 +2,7 @@ import { db } from '../../database/client';
 import { eq } from 'drizzle-orm';
 import type { onebot_adapters } from '../../shared/types/adapters/adapter';
 import { onebot_adapters as onebot_adaptersData } from '../../database/schema';
-import { wsServerManager } from '~/server/utils/adapters/onebot/wsOnebotManager';
+import { onebotConnectionManager } from '~/server/utils/adapters/onebot/connectionManager';
 
 class AdapterManager {
     private static instance: AdapterManager;
@@ -25,7 +25,7 @@ class AdapterManager {
         const adapters = await db.select().from(onebot_adaptersData).all();
         return adapters.map((adapter) => ({
             ...adapter,
-            connected: wsServerManager.hasActiveConnection(adapter.botId)
+            connected: onebotConnectionManager.has(adapter.botId)
         }));
     }
 
@@ -41,25 +41,14 @@ class AdapterManager {
         return result || null;
     }
 
-    // 通过监听路径获取适配器配置
-    async getAdapterByPath(path: string): Promise<onebot_adapters | null> {
-        const result = await db
-            .select()
-            .from(onebot_adaptersData)
-            .where(eq(onebot_adaptersData.listenPath, path))
-            .get();
-        return result || null;
-    }
-
     // 创建新适配器配置
     async createAdapter(config: Omit<onebot_adapters, 'id'>): Promise<onebot_adapters> {
         const result = await db.insert(onebot_adaptersData).values(config).returning().get();
-        await wsServerManager.initAdapter(result);
         return result;
     }
 
     // 更新适配器配置
-    async updateAdapter(id: number, config: Partial<onebot_adapters>): Promise<onebot_adapters | null> {
+    async updateAdapter(id: number, config: onebot_adapters): Promise<onebot_adapters | null> {
         const result = await db
             .update(onebot_adaptersData)
             .set(config)
@@ -67,7 +56,7 @@ class AdapterManager {
             .returning()
             .get();
         if (result) {
-            await wsServerManager.updateAdapter(result);
+            onebotConnectionManager.disconnect(config.botId);
         }
         return result || null;
     }
@@ -81,7 +70,7 @@ class AdapterManager {
 
         try {
             await db.delete(onebot_adaptersData).where(eq(onebot_adaptersData.id, id));
-            await wsServerManager.removeAdapter(adapter);
+            onebotConnectionManager.disconnect(adapter.botId);
             return true;
         } catch (error) {
             console.error('Failed to delete adapter:', error);
@@ -92,12 +81,17 @@ class AdapterManager {
     // 启用/禁用适配器
     async setAdapterStatus(id: number, enabled: boolean): Promise<boolean> {
         try {
+            const adapter = await this.getAdapter(id);
+            if (!adapter) {
+                return false;
+            }
+
             await db.update(onebot_adaptersData).set({ enabled }).where(eq(onebot_adaptersData.id, id));
 
-            const adapter = await this.getAdapter(id);
-            if (adapter) {
-                await wsServerManager.updateAdapter({ ...adapter, enabled });
+            if (!enabled) {
+                onebotConnectionManager.disconnect(adapter.botId);
             }
+
             return true;
         } catch (error) {
             console.error('Failed to update adapter status:', error);
