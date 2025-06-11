@@ -26,7 +26,10 @@ export default defineWebSocketHandler({
             peer.close(4004, '已有连接');
             return;
         }
-        onebotConnectionManager.add(botId, peer);
+        onebotConnectionManager.add(
+            botId,
+            peer as unknown as import('crossws').Peer<import('crossws').AdapterInternal>
+        );
     },
     message(peer, message) {
         console.log('OneBot message:', message.text());

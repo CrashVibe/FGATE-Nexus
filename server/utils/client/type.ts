@@ -1,19 +1,19 @@
 import type { AdapterInternal, Peer } from 'crossws';
 
-export interface JsonRpcRequest {
+export interface JsonRpcRequest<P = unknown> {
     jsonrpc: string;
-    method?: string;
-    params?: any;
-    id?: string | null;
+    method: string;
+    params?: P;
+    id: string | null;
 }
 
-export interface JsonRpcResponse {
+export interface JsonRpcResponse<R = unknown, E = unknown> {
     jsonrpc: string;
-    result?: any;
+    result: R;
     error?: {
         code: number;
         message: string;
-        data?: any;
+        data?: E;
     };
     id: string | null;
 }
@@ -36,8 +36,8 @@ export interface ClientInfo {
     clientVersion: string;
 }
 
-export interface PendingRequest {
-    resolve: (value: any) => void;
-    reject: (reason?: any) => void;
+export interface PendingRequest<T = unknown> {
+    resolve: (value: T) => void;
+    reject: (reason?: unknown) => void;
     timeout: NodeJS.Timeout;
 }

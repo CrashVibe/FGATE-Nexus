@@ -1,5 +1,7 @@
+import type { Peer, AdapterInternal } from 'crossws';
+
 export interface ConnectionInfo {
-    peer: import('crossws').Peer<import('crossws').AdapterInternal>;
+    peer: Peer<AdapterInternal>;
 }
 
 class ConnectionManager {
@@ -15,7 +17,7 @@ class ConnectionManager {
         return ConnectionManager.instance;
     }
 
-    add(botId: number, peer: import('crossws').Peer<import('crossws').AdapterInternal>) {
+    add(botId: number, peer: Peer<AdapterInternal>) {
         this.connections.set(botId, { peer });
     }
 

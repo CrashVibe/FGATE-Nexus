@@ -52,7 +52,7 @@ export default defineWebSocketHandler({
         );
 
         try {
-            wsManager.handleConnection(peer);
+            wsManager.handleConnection(peer as unknown as import('crossws').Peer<import('crossws').AdapterInternal>);
         } catch (error) {
             console.error('处理 WebSocket 连接时发生错误：', error);
             peer.close(4000, '服务器内部错误');
@@ -60,11 +60,18 @@ export default defineWebSocketHandler({
     },
 
     message(peer, message) {
-        wsManager.handleMessage(peer, message.text());
+        wsManager.handleMessage(
+            peer as unknown as import('crossws').Peer<import('crossws').AdapterInternal>,
+            message.text()
+        );
     },
 
     close(peer, details) {
-        wsManager.handleDisconnection(peer, details.code, details.reason);
+        wsManager.handleDisconnection(
+            peer as unknown as import('crossws').Peer<import('crossws').AdapterInternal>,
+            details.code,
+            details.reason
+        );
     },
 
     error(peer, error) {

@@ -2,6 +2,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { MinecraftClientManager } from './client/minecraft-client-manager';
 import type { AdapterInternal, Peer } from 'crossws';
 import type { ClientInfo, JsonRpcRequest, JsonRpcResponse, PendingRequest } from './client/type';
+import type { ServerStatus } from '~/server/shared/types/server/status';
+import type { GetClientInfoResult } from '~/server/shared/types/server/client-info';
+
+// 在类外部新增 WeakMap 用于反向绑定
+const peerClientMap: WeakMap<ClientInfo, Peer<AdapterInternal>> = new WeakMap();
 
 export class WebSocketManager {
     private static instance: WebSocketManager;
@@ -26,7 +31,24 @@ export class WebSocketManager {
         return this.clients.get(peer)?.id;
     }
 
+    // 通过 peer 获取强绑定的 client，不存在则抛出异常
+    private getBoundClient(peer: Peer<AdapterInternal>): ClientInfo {
+        const client = this.clients.get(peer);
+        if (!client) {
+            throw new Error(`未找到与 peer(${peer.id}) 绑定的客户端`);
+        }
+        return client;
+    }
+
+    // 通过 client 获取强绑定的 peer，不存在则抛出异常
+    private getBoundPeer(client: ClientInfo): Peer<AdapterInternal> {
+        const peer = peerClientMap.get(client);
+        if (!peer) throw new Error(`未找到与 client(${client.id}) 绑定的 peer`);
+        return peer;
+    }
+
     handleConnection(peer: Peer<AdapterInternal>) {
+        // 新建客户端信息并与 peer 建立双向强绑定
         const clientId = uuidv4();
         const token = peer.request.headers.get('authorization')?.replace('Bearer ', '') || '';
         const clientVersion = peer.request.headers.get('x-api-version') || '1.0.0';
@@ -42,36 +64,37 @@ export class WebSocketManager {
         };
 
         this.clients.set(peer, client);
+        // 反向绑定：保证 client 能唯一找到 peer
+        peerClientMap.set(client, peer);
 
-        console.log(`📱 New client connected: ${clientId} (version: ${clientVersion})`);
-
+        console.log(`📱 新客户端已连接: ${clientId} (版本: ${clientVersion})`);
         this.requestClientInfo(peer);
     }
 
     handleMessage(peer: Peer<AdapterInternal>, message: string) {
         try {
-            const data: JsonRpcRequest = JSON.parse(message);
+            const data = JSON.parse(message);
 
-            if (data.jsonrpc !== '2.0') {
-                this.sendError(peer, -32600, 'Invalid Request', data.id ?? null);
+            if (!isValidJsonRpcRequest(data) && !isValidJsonRpcResponse(data)) {
+                this.sendError(peer, -32600, '请求格式错误', null);
                 return;
             }
 
             // 处理响应消息（有result或error字段）
-            if ('result' in data || 'error' in data) {
-                this.handleResponse(peer, data as JsonRpcResponse);
+            if (isValidJsonRpcResponse(data)) {
+                this.handleResponse(peer, data);
                 return;
             }
 
             // 处理请求消息（有method字段）
-            if (data.method) {
+            if (isValidJsonRpcRequest(data) && data.method) {
                 this.handleRequest(peer, data);
                 return;
             }
 
-            this.sendError(peer, -32600, 'Invalid Request', data.id ?? null);
+            this.sendError(peer, -32600, '请求无效', data.id ?? null);
         } catch (error) {
-            console.error(`❌ Error parsing message from client ${peer.id}:`, error);
+            console.error(`❌ 解析客户端 ${peer.id} 消息出错:`, error);
             this.sendError(peer, -32700, 'Parse error', null);
         }
     }
@@ -80,16 +103,25 @@ export class WebSocketManager {
         const client = this.clients.get(peer);
         if (!client) return;
 
-        console.log(`📨 Received request from ${peer.id}: ${request.method}`);
+        console.log(`📨 收到来自 ${peer.id} 的请求: ${request.method}`);
 
         switch (request.method) {
             case 'player.join':
-                this.handlePlayerJoin(peer, request.params);
+                if (
+                    typeof request.params === 'object' &&
+                    request.params !== null &&
+                    typeof (request.params as { player?: unknown }).player === 'string' &&
+                    typeof (request.params as { uuid?: unknown }).uuid === 'string'
+                ) {
+                    this.handlePlayerJoin(peer, request.params as { player: string; uuid: string });
+                } else {
+                    this.sendError(peer, -32602, '参数无效', request.id ?? null);
+                }
                 break;
 
             case 'heartbeat':
                 if (!request.id) {
-                    this.sendError(peer, -32600, 'Invalid Request', null);
+                    this.sendError(peer, -32600, '请求无效', null);
                     return;
                 }
                 this.sendResponse(peer, request.id ?? null, { status: 'ok', timestamp: Date.now() });
@@ -116,19 +148,19 @@ export class WebSocketManager {
         }
     }
 
-    private handlePlayerJoin(peer: Peer<AdapterInternal>, params: any) {
+    private handlePlayerJoin(peer: Peer<AdapterInternal>, params: { player: string; uuid: string }) {
         const clientId = this.getClientIdByPeer(peer);
         if (!clientId) {
-            console.warn(`⚠️  Invalid player join data from ${peer.id}`);
+            console.warn(`⚠️  无法处理玩家加入数据: 来自 ${peer.id}`);
             return;
         }
 
         if (!params?.player || !params?.uuid) {
-            console.warn(`⚠️  Invalid player join data from ${clientId}`);
+            console.warn(`⚠️  无法处理玩家加入数据: 来自 ${clientId}`);
             return;
         }
 
-        console.log(`🎮 Player joined on ${clientId}: ${params.player} (${params.uuid})`);
+        console.log(`🎮 玩家加入: ${clientId}: ${params.player} (${params.uuid})`);
         // 简化版本：移除复杂的玩家行为检查
     }
 
@@ -142,17 +174,17 @@ export class WebSocketManager {
                     reason = `未知原因 (代码: ${code})`;
                 }
             }
-            console.log(`📱 断开连接: ${client.id}, 代码: ${code}, 原因: ${reason}`);
+            console.log(`📱 客户端断开连接: ${client.id}, 代码: ${code}, 原因: ${reason}`);
             this.clients.delete(peer);
             this.minecraftManager.removeClient(peer);
         }
     }
 
     // 发送JSON-RPC请求到客户端
-    private sendRequest(peer: Peer<AdapterInternal>, method: string, params?: any): Promise<any> {
+    private sendRequest<T = unknown, P = unknown>(peer: Peer<AdapterInternal>, method: string, params?: P): Promise<T> {
         return new Promise((resolve, reject) => {
             const id = uuidv4();
-            const request: JsonRpcRequest = {
+            const request: JsonRpcRequest<P> = {
                 jsonrpc: '2.0',
                 method,
                 params,
@@ -167,14 +199,14 @@ export class WebSocketManager {
 
             // 存储待处理的请求
             this.pendingRequests.set(id, {
-                resolve: (value: any) => resolve(value),
+                resolve: (value: unknown) => resolve(value as T),
                 reject,
                 timeout
             });
 
             try {
                 peer.send(JSON.stringify(request));
-                console.log(`📤 Sent request to ${peer.id}: ${method} (ID: ${id})`);
+                console.log(`📤 已发送请求到 ${peer.id}: ${method} (ID: ${id})`);
             } catch (error) {
                 this.pendingRequests.delete(id);
                 clearTimeout(timeout);
@@ -184,47 +216,61 @@ export class WebSocketManager {
     }
 
     // 发送JSON-RPC响应
-    private sendResponse(peer: Peer<AdapterInternal>, id: string | null, result?: any, error?: any) {
+    private sendResponse<R = unknown, E = unknown>(
+        peer: Peer<AdapterInternal>,
+        id: string | null,
+        result: R,
+        error?: E
+    ) {
         const client = this.clients.get(peer);
         if (!client) {
-            console.warn(`无法发送响应到客户端 ${peer.id}: 客户端未连接`);
+            console.warn(`⚠️  无法发送响应到客户端 ${peer.id}: 客户端未连接`);
             return;
         }
 
-        const response: JsonRpcResponse = {
+        const response: JsonRpcResponse<R, E> = {
             jsonrpc: '2.0',
-            id
+            id,
+            result
         };
 
         if (error) {
-            response.error = error;
-        } else {
-            response.result = result;
+            response.error =
+                error && typeof error === 'object' && 'code' in error && 'message' in error
+                    ? (error as { code: number; message: string; data?: E })
+                    : { code: -32000, message: 'Unknown error', data: error as E };
         }
 
         try {
             peer.send(JSON.stringify(response));
-        } catch (error) {
-            console.error(`无法发送响应到客户端 ${client.id}:`, error);
+        } catch (err) {
+            console.error(`❌ 无法发送响应到客户端 ${client.id}:`, err);
         }
     }
 
     // 发送错误响应
-    private sendError(peer: Peer<AdapterInternal>, code: number, message: string, id: string | null, data?: any) {
+    private sendError<E = unknown>(
+        peer: Peer<AdapterInternal>,
+        code: number,
+        message: string,
+        id: string | null,
+        data?: E
+    ) {
         this.sendResponse(peer, id, undefined, { code, message, data });
     }
 
     // 请求客户端信息
     private async requestClientInfo(peer: Peer<AdapterInternal>) {
         try {
-            const result = await this.sendRequest(peer, 'get.client.info');
-            // 查看result类型
-            const minecraft_version = result.data.minecraft_version;
-            const minecraft_software = result.data.minecraft_software;
-            const supports_papi = result.data.supports_papi;
-            const supports_rcon = result.data.supports_rcon;
-
-            if (!minecraft_version || !minecraft_software || typeof supports_papi !== 'boolean' || typeof supports_rcon !== 'boolean') {
+            const result = await this.sendRequest<GetClientInfoResult>(peer, 'get.client.info');
+            // 类型检测
+            if (
+                !result.data ||
+                typeof result.data.minecraft_version !== 'string' ||
+                typeof result.data.minecraft_software !== 'string' ||
+                typeof result.data.supports_papi !== 'boolean' ||
+                typeof result.data.supports_rcon !== 'boolean'
+            ) {
                 console.warn(result.data);
                 console.warn(`⚠️ 警告: 客户端 ${peer.id} 未提供完整的客户端信息`);
                 return;
@@ -233,19 +279,19 @@ export class WebSocketManager {
             const client = this.clients.get(peer);
             if (client) {
                 client.serverInfo = {
-                    minecraft_version,
-                    server_type: minecraft_software,
-                    supports_papi,
-                    supports_rcon
+                    minecraft_version: result.data.minecraft_version,
+                    server_type: result.data.minecraft_software,
+                    supports_papi: result.data.supports_papi,
+                    supports_rcon: result.data.supports_rcon
                 };
                 this.minecraftManager.updateClientInfo(peer, client);
             } else {
                 console.warn(`⚠️  无法更新客户端信息: 客户端 ${peer.id} 未找到`);
                 return;
             }
-            console.log(`📊 Received client info from ${peer.id}:`, client.serverInfo);
+            console.log(`📊 已收到来自 ${peer.id} 的客户端信息:`, client.serverInfo);
         } catch (error) {
-            console.error(`❌ Failed to get client info from ${peer.id}:`, error);
+            console.error(`❌ 获取客户端 ${peer.id} 信息失败:`, error);
         }
     }
 
@@ -268,6 +314,7 @@ export class WebSocketManager {
             const notification: JsonRpcRequest = {
                 jsonrpc: '2.0',
                 method: 'kick.player',
+                id: null,
                 params: {
                     player: playerIdentifier,
                     reason
@@ -275,10 +322,10 @@ export class WebSocketManager {
             };
 
             peer.send(JSON.stringify(notification));
-            console.log(`👢 Sent kick command to server ${serverId} for player: ${playerIdentifier}`);
+            console.log(`👢 已向服务器 ${serverId} 发送踢人指令: ${playerIdentifier}`);
             return { success: true };
         } catch (error) {
-            console.error(`❌ Failed to kick player on server ${serverId}:`, error);
+            console.error(`❌ 踢出服务器 ${serverId} 玩家失败:`, error);
             return { success: false, error: String(error) };
         }
     }
@@ -292,7 +339,7 @@ export class WebSocketManager {
 
             const client = this.clients.get(peer);
             if (client) {
-                console.log(`🔌 Disconnecting server ${serverId} (${client.id})`);
+                console.log(`🔌 正在断开服务器 ${serverId} (${client.id})`);
                 this.clients.delete(peer);
                 this.minecraftManager.removeClient(peer);
                 peer.close();
@@ -301,55 +348,48 @@ export class WebSocketManager {
 
             return { success: false, error: '服务器客户端未找到' };
         } catch (error) {
-            console.error(`❌ Failed to disconnect server ${serverId}:`, error);
+            console.error(`❌ 断开服务器 ${serverId} 失败:`, error);
             return { success: false, error: String(error) };
         }
     }
 
-    public async getServerStatus(serverId: number): Promise<any> {
+    // 统一生成未知服务器状态的默认对象
+    private static getUnknownServerStatus(): ServerStatus {
+        return {
+            isOnline: false,
+            playerCount: 0,
+            lastSeen: null,
+            supportsRcon: false,
+            supportsPapi: false,
+            software: 'Unknown',
+            version: 'Unknown'
+        };
+    }
+
+    public async getServerStatus(serverId: number): Promise<ServerStatus> {
         try {
             const peer = await this.getPeerByServerId(serverId);
             if (!peer) {
-                return {
-                    isOnline: false,
-                    playerCount: 0,
-                    lastSeen: null,
-                    supportsRcon: false,
-                    software: 'Unknown',
-                    version: 'Unknown'
-                };
+                return WebSocketManager.getUnknownServerStatus();
             }
 
             const client = this.clients.get(peer);
             if (!client) {
-                return {
-                    isOnline: false,
-                    playerCount: 0,
-                    lastSeen: null,
-                    supportsRcon: false,
-                    software: 'Unknown',
-                    version: 'Unknown'
-                };
+                return WebSocketManager.getUnknownServerStatus();
             }
 
             return {
                 isOnline: client.isAlive,
                 playerCount: client.playerCount || 0,
                 lastSeen: new Date(client.lastPing),
-                supportsRcon: client.serverInfo?.supports_papi || false,
+                supportsRcon: client.serverInfo?.supports_rcon || false,
+                supportsPapi: client.serverInfo?.supports_papi || false,
                 software: client.serverInfo?.server_type || 'Unknown',
                 version: client.serverInfo?.minecraft_version || 'Unknown'
             };
         } catch (error) {
-            console.error(`❌ Failed to get server status for ${serverId}:`, error);
-            return {
-                isOnline: false,
-                playerCount: 0,
-                lastSeen: null,
-                supportsRcon: false,
-                software: 'Unknown',
-                version: 'Unknown'
-            };
+            console.error(`❌ 获取服务器 ${serverId} 状态失败:`, error);
+            return WebSocketManager.getUnknownServerStatus();
         }
     }
 
@@ -363,7 +403,7 @@ export class WebSocketManager {
             const server = await db.select().from(servers).where(eq(servers.id, serverId)).limit(1);
 
             if (server.length === 0) {
-                console.warn(`⚠️  Server ${serverId} not found in database`);
+                console.warn(`⚠️  数据库未找到服务器 ${serverId}`);
                 return null;
             }
 
@@ -378,7 +418,7 @@ export class WebSocketManager {
 
             return null;
         } catch (error) {
-            console.error(`❌ Error finding peer for server ${serverId}:`, error);
+            console.error(`❌ 查找服务器 ${serverId} 的 peer 失败:`, error);
             return null;
         }
     }
@@ -387,14 +427,21 @@ export class WebSocketManager {
         return Array.from(this.clients.values());
     }
 
-    public getClient(peer: Peer<AdapterInternal>): ClientInfo | undefined {
-        return this.clients.get(peer);
+    // getClient：通过 peer 获取强绑定的 client，保证一定存在
+    public getClient(peer: Peer<AdapterInternal>): ClientInfo {
+        return this.getBoundClient(peer);
     }
 
-    public broadcast(method: string, params?: any) {
-        const notification: JsonRpcRequest = {
+    // getPeerByClient：通过 client 获取强绑定的 peer，保证一定存在
+    public getPeerByClient(client: ClientInfo): Peer<AdapterInternal> {
+        return this.getBoundPeer(client);
+    }
+
+    public broadcast<P = unknown>(method: string, params?: P) {
+        const notification: JsonRpcRequest<P> = {
             jsonrpc: '2.0',
             method,
+            id: null,
             params
         };
 
@@ -404,7 +451,7 @@ export class WebSocketManager {
             try {
                 client.peer.send(message);
             } catch (error) {
-                console.error(`❌ Failed to broadcast to client ${peer}:`, error);
+                console.error(`❌ 广播到客户端 ${peer} 失败:`, error);
             }
         });
     }
@@ -425,7 +472,7 @@ export class WebSocketManager {
             try {
                 client.peer.close();
             } catch (error) {
-                console.error('❌ Error closing client connection:', error);
+                console.error('❌ 关闭客户端连接出错:', error);
             }
         });
         this.clients.clear();
@@ -441,7 +488,7 @@ export class WebSocketManager {
     ) {
         const client = this.clients.get(peer);
         if (!client) {
-            console.warn(`⚠️  Cannot kick player: client ${peer.id} not found`);
+            console.warn(`⚠️  无法踢出玩家: 未找到客户端 ${peer.id}`);
             return;
         }
 
@@ -451,14 +498,34 @@ export class WebSocketManager {
             params: {
                 player: playerIdentifier,
                 reason
-            }
+            },
+            id: null
         };
 
         try {
             peer.send(JSON.stringify(notification));
-            console.log(`👢 Sent kick command to ${peer.id} for player: ${playerIdentifier}`);
+            console.log(`👢 已向 ${peer.id} 发送踢人指令: ${playerIdentifier}`);
         } catch (error) {
-            console.error(`❌ Failed to send kick command to ${peer.id}:`, error);
+            console.error(`❌ 向 ${peer.id} 发送踢人指令失败:`, error);
         }
     }
+}
+
+// JSON-RPC 消息类型校验工具
+function isValidJsonRpcRequest(obj: unknown): obj is JsonRpcRequest {
+    if (typeof obj !== 'object' || obj === null) return false;
+    const o = obj as Record<string, unknown>;
+    if (o.jsonrpc !== '2.0') return false;
+    if ('method' in o && typeof o.method !== 'string') return false;
+    if ('id' in o && !(typeof o.id === 'string' || o.id === null)) return false;
+    return true;
+}
+
+function isValidJsonRpcResponse(obj: unknown): obj is JsonRpcResponse {
+    if (typeof obj !== 'object' || obj === null) return false;
+    const o = obj as Record<string, unknown>;
+    if (o.jsonrpc !== '2.0') return false;
+    if (!('result' in o || 'error' in o)) return false;
+    if (!('id' in o) || !(typeof o.id === 'string' || o.id === null)) return false;
+    return true;
 }
