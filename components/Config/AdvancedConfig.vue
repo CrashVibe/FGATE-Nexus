@@ -61,7 +61,6 @@ const dialog = useDialog();
 const router = useRouter();
 const { serverApi } = useApi();
 
-// 服务器状态
 const serverStatus = ref({
     isOnline: false,
     playerCount: 0,
@@ -71,10 +70,8 @@ const serverStatus = ref({
     version: ''
 });
 
-// 操作状态
 const operating = ref(false);
 
-// 获取服务器状态
 const fetchServerStatus = async () => {
     try {
         const response: any = await serverApi.getServerStatus(props.serverId);
@@ -86,7 +83,6 @@ const fetchServerStatus = async () => {
     }
 };
 
-// 强制断开连接
 const forceDisconnect = () => {
     dialog.warning({
         title: '确认断开',
@@ -109,7 +105,6 @@ const forceDisconnect = () => {
     });
 };
 
-// 删除服务器
 const deleteServer = () => {
     dialog.error({
         title: '确认删除',
@@ -132,7 +127,6 @@ const deleteServer = () => {
     });
 };
 
-// 格式化时间
 const formatTime = (date: Date | null) => {
     if (!date) return '从未连接';
     return new Intl.DateTimeFormat('zh-CN', {
@@ -145,17 +139,14 @@ const formatTime = (date: Date | null) => {
     }).format(new Date(date));
 };
 
-// 初始化
 let statusInterval: ReturnType<typeof setInterval> | null = null;
 
 onMounted(async () => {
     await fetchServerStatus();
-    // 定期刷新状态
-    statusInterval = setInterval(fetchServerStatus, 5000); // 降低刷新频率
+    statusInterval = setInterval(fetchServerStatus, 5000);
 });
 
 onBeforeUnmount(() => {
-    // 清理定时器
     if (statusInterval) {
         clearInterval(statusInterval);
         statusInterval = null;

@@ -59,7 +59,6 @@ const router = useRouter();
 const serverId = computed(() => Number(route.params.id));
 const { serverApi } = useApi();
 
-// 获取服务器基本信息
 const serverData: any = await serverApi.getServer(serverId.value);
 
 const goBack = () => {

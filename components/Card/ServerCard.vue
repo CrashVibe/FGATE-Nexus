@@ -151,7 +151,6 @@ function copyTokenToClipboard(e?: Event) {
 }
 
 const getSoftwareIcon = (software: string | null) => {
-    // 不要把图标放到 assets 目录下，尽量使用 CDN 或者在线图标
     switch (software) {
         case 'Paper':
             return 'https://assets.papermc.io/brand/papermc_logo.min.svg';
@@ -260,7 +259,6 @@ const getSoftwareIcon = (software: string | null) => {
     cursor: pointer;
 }
 
-/* Card appear transition effects */
 .card-appear-enter-active {
     transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
 }

@@ -2,7 +2,6 @@ import AutoImport from 'unplugin-auto-import/vite';
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers';
 import Components from 'unplugin-vue-components/vite';
 
-// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
     compatibilityDate: 'latest',
     devtools: { enabled: true },
@@ -60,7 +59,7 @@ export default defineNuxtConfig({
     },
     build: {
         transpile: [
-            '@vue/compiler-dom' // 确保模块被正确转译
+            '@vue/compiler-dom'
         ]
     }
 });

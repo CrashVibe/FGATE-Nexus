@@ -249,7 +249,6 @@ export class WebSocketManager {
         }
     }
 
-    // 根据服务器ID踢出玩家
     public async kickPlayerByServerId(
         serverId: number,
         playerIdentifier: string,
@@ -284,7 +283,6 @@ export class WebSocketManager {
         }
     }
 
-    // 根据服务器ID断开连接
     public async disconnectServer(serverId: number): Promise<{ success: boolean; error?: string }> {
         try {
             const peer = await this.getPeerByServerId(serverId);
@@ -308,7 +306,6 @@ export class WebSocketManager {
         }
     }
 
-    // 根据服务器ID获取服务器状态
     public async getServerStatus(serverId: number): Promise<any> {
         try {
             const peer = await this.getPeerByServerId(serverId);
@@ -356,7 +353,6 @@ export class WebSocketManager {
         }
     }
 
-    // 根据服务器ID获取对应的peer
     private async getPeerByServerId(serverId: number): Promise<Peer<AdapterInternal> | null> {
         try {
             // 从数据库获取服务器token
@@ -387,17 +383,14 @@ export class WebSocketManager {
         }
     }
 
-    // 获取所有连接的客户端
     public getConnectedClients(): ClientInfo[] {
         return Array.from(this.clients.values());
     }
 
-    // 根据ID获取客户端
     public getClient(peer: Peer<AdapterInternal>): ClientInfo | undefined {
         return this.clients.get(peer);
     }
 
-    // 广播消息到所有客户端
     public broadcast(method: string, params?: any) {
         const notification: JsonRpcRequest = {
             jsonrpc: '2.0',
@@ -416,21 +409,18 @@ export class WebSocketManager {
         });
     }
 
-    // 清理资源
     public destroy() {
         if (this.heartbeatInterval) {
             clearInterval(this.heartbeatInterval);
             this.heartbeatInterval = null;
         }
 
-        // 清理所有待处理的请求
         this.pendingRequests.forEach((request) => {
             clearTimeout(request.timeout);
             request.reject(new Error('WebSocketManager destroyed'));
         });
         this.pendingRequests.clear();
 
-        // 关闭所有连接
         this.clients.forEach((client) => {
             try {
                 client.peer.close();
@@ -444,7 +434,6 @@ export class WebSocketManager {
         return Array.from(this.clients.values()).some((client) => client.token === token);
     }
 
-    // 踢出玩家（直接使用peer）
     public kickPlayerDirect(
         peer: Peer<AdapterInternal>,
         playerIdentifier: string,

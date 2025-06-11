@@ -10,7 +10,6 @@ export default defineEventHandler(async (event): Promise<AdapterActionResponse> 
     }
 
     const body = await readBody(event);
-    // 校验适配器字段
     if (body.adapter_type === 'onebot') {
         return await dispatchToAdapter('onebot', event.method, event);
     }

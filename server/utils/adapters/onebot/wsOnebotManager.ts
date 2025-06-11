@@ -4,13 +4,18 @@ import { adapterManager } from '../adapterManager';
 import http from 'http';
 import type { Duplex } from 'stream';
 
+declare global {
+    var __wsServerManager__: AdapterWebSocketServerManager | undefined;
+    var __wsServerManagerSignalRegistered__: boolean | undefined;
+}
+
 class AdapterWebSocketServerManager {
     private static instance: AdapterWebSocketServerManager;
     private pathMap = new Map<string, Map<string, { wss: WebSocketServer; adapter: onebot_adapters }>>();
-    private botIdToPath = new Map<number, string>(); // 新增：快速查找 botId 对应的路径
+    private botIdToPath = new Map<number, string>();
     private server: http.Server;
-    private heartbeatIntervals = new Map<string, NodeJS.Timeout>(); // 新增：集中管理心跳定时器
-    private isClosing = false; // 新增：防止重复关闭
+    private heartbeatIntervals = new Map<string, NodeJS.Timeout>();
+    private isClosing = false;
 
     private constructor() {
         this.server = http.createServer();
@@ -409,48 +414,39 @@ class AdapterWebSocketServerManager {
      * @returns {Promise<void>}
      */
     public async close(): Promise<void> {
-        if (this.isClosing) {
-            return; // 如果已经在关闭过程中，直接返回
-        }
-        
+        if (this.isClosing) return;
         this.isClosing = true;
-        
-        return new Promise((resolve, reject) => {
-            // 清理所有心跳定时器
-            this.heartbeatIntervals.forEach((interval) => {
-                clearInterval(interval);
-            });
-            this.heartbeatIntervals.clear();
 
-            // 关闭所有 WebSocket 连接
-            this.pathMap.forEach((serverMap) => {
-                serverMap.forEach(({ wss }) => {
-                    wss.close();
-                });
-            });
-            this.pathMap.clear();
-            this.botIdToPath.clear();
+        // 清理心跳定时器
+        this.heartbeatIntervals.forEach(clearInterval);
+        this.heartbeatIntervals.clear();
 
-            // 关闭 HTTP 服务器
+        // 关闭所有 WebSocket
+        for (const botMap of this.pathMap.values()) {
+            for (const { wss } of botMap.values()) {
+                wss.close();
+            }
+        }
+        this.pathMap.clear();
+        this.botIdToPath.clear();
+
+        await new Promise<void>((resolve) => {
             if (this.server.listening) {
-                this.server.close((error) => {
-                    if (error) {
-                        console.error('关闭服务器时发生错误:', error);
-                        reject(error);
-                    } else {
-                        console.log('WebSocket 服务器已关闭');
-                        resolve();
-                    }
-                });
+                this.server.close(() => resolve());
             } else {
-                console.log('WebSocket 服务器已关闭');
                 resolve();
             }
         });
+
+        console.log('WebSocket 服务器已关闭');
+        this.isClosing = false;
     }
 }
 
-export const wsServerManager = AdapterWebSocketServerManager.getInstance();
+const g = globalThis as any;
+export const wsServerManager =
+    g.__wsServerManager__ ||
+    (g.__wsServerManager__ = AdapterWebSocketServerManager.getInstance());
 
 // 优雅关闭：处理进程退出事件
 async function gracefulShutdown(signal: string) {
@@ -464,5 +460,16 @@ async function gracefulShutdown(signal: string) {
     }
 }
 
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+if (!g.__wsServerManagerSignalRegistered__) {
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    g.__wsServerManagerSignalRegistered__ = true;
+}
+
+if (import.meta.hot) {
+    import.meta.hot.accept();
+    // 热重载时保留服务器实例，避免端口反复释放导致占用错误
+    import.meta.hot.dispose(() => {
+        g.__wsServerManagerSignalRegistered__ = false;
+    });
+}

@@ -54,25 +54,21 @@ function renderIcon(icon: Component) {
     return () => h(NIcon, null, { default: () => h(icon) });
 }
 
-// 获取当前服务器ID
 const getCurrentServerId = () => {
     const match = route.path.match(/\/servers\/(\d+)/);
     return match ? match[1] : null;
 };
 
-// 菜单配置
 const menuOptions = computed(() => {
     const serverId = getCurrentServerId();
     const menu: any[] = [];
 
-    // 添加返回主页选项
     menu.push({
         label: '返回服务器管理',
         key: '/',
         icon: renderIcon(MenuOutline)
     });
 
-    // 如果当前在服务器相关页面，添加服务器配置菜单
     if (serverId) {
         menu.push({
             label: '配置总览',

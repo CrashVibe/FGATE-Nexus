@@ -12,7 +12,6 @@ export default defineEventHandler(async (event) => {
     try {
         const wsManager = WebSocketManager.getInstance();
 
-        // 断开服务器连接
         await wsManager.disconnectServer(parseInt(serverId));
 
         return {

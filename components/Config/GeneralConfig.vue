@@ -55,17 +55,14 @@ const props = defineProps<{
 const message = useMessage();
 const { serverApi } = useApi();
 
-// 基本配置
 const generalConfig = ref({
     name: '',
     token: ''
 });
 
-// 服务器状态
 const serverStatus = ref<any>(null);
 const saving = ref(false);
 
-// 获取基本配置
 const fetchGeneralConfig = async () => {
     try {
         const response: any = await serverApi.getServer(props.serverId);
@@ -82,7 +79,6 @@ const fetchGeneralConfig = async () => {
     }
 };
 
-// 保存基本配置
 const saveGeneralConfig = async () => {
     saving.value = true;
     try {
@@ -98,7 +94,6 @@ const saveGeneralConfig = async () => {
     }
 };
 
-// 初始化
 onMounted(async () => {
     await fetchGeneralConfig();
 });

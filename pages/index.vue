@@ -4,22 +4,18 @@ import { v4 as uuidv4 } from 'uuid';
 import ServerCard from '~/components/Card/ServerCard.vue';
 import type { ServerWithStatus } from '~/server/shared/types/server/api';
 
-// 获取 API 实例
 const { serverApi } = useApi();
 
-// 表单数据类型
 interface FormData {
     servername: string;
     token: string;
 }
 
-// 对话框状态
 const showModal = ref(false);
 const submitting = ref(false);
 const formRef = ref<any>(null);
 const message = useMessage();
 
-// 表单数据及验证规则
 const formData = ref<FormData>({
     servername: '',
     token: ''
@@ -36,19 +32,16 @@ const rules = {
     ]
 };
 
-// 打开对话框时重置表单
 watch(showModal, (newVal) => {
     if (newVal) {
         formData.value = {
             servername: '',
             token: ''
         };
-        // 清除验证状态
         setTimeout(() => formRef.value?.restoreValidation(), 0);
     }
 });
 
-// 提交表单
 const handleSubmit = async (e: Event) => {
     e.preventDefault();
     submitting.value = true;
@@ -73,17 +66,14 @@ const handleSubmit = async (e: Event) => {
     submitting.value = false;
 };
 
-// 关闭对话框
 const handleClose = () => {
     showModal.value = false;
 };
-// 生成随机Token
 const generateToken = () => {
     formData.value.token = uuidv4();
     message.info('已生成随机Token');
 };
 
-// 刷新列表
 const refreshing = ref(false);
 const handleRefresh = async () => {
     refreshing.value = true;
@@ -99,16 +89,13 @@ const handleRefresh = async () => {
 
 const serverList = ref<ServerWithStatus[]>([]);
 const refreshTimer = ref<NodeJS.Timeout | null>(null);
-// 添加最后更新时间
 const lastUpdateTime = ref<string>('');
 
-// 获取服务器列表
 async function getServerList() {
     try {
         const res = await serverApi.getServerList();
         if (res.success) {
             serverList.value = res.data;
-            // 更新最后更新时间
             lastUpdateTime.value = new Date().toLocaleString('zh-CN', {
                 year: 'numeric',
                 month: '2-digit',
@@ -128,7 +115,6 @@ async function getServerList() {
     }
 }
 
-// 动画处理函数
 const onBeforeCardEnter = (el: Element) => {
     (el as HTMLElement).style.opacity = '0';
     (el as HTMLElement).style.transform = 'scale(0.8) translateY(20px)';
@@ -136,7 +122,7 @@ const onBeforeCardEnter = (el: Element) => {
 
 const onCardEnter = (el: Element, done: () => void) => {
     const index = parseInt((el as HTMLElement).dataset.index || '0');
-    const delay = index * 100; // 每个卡片延迟100ms
+    const delay = index * 100;
 
     setTimeout(() => {
         (el as HTMLElement).style.transition = 'all 0.6s cubic-bezier(0.23, 1, 0.32, 1)';

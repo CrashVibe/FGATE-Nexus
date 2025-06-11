@@ -1,6 +1,5 @@
 <template>
     <n-layout class="layout" bordered>
-        <!-- 顶部导航栏 -->
         <n-layout-header bordered>
             <n-space justify="space-between" align="center" style="height: 100%">
                 <n-text strong>服务器管理系统</n-text>
@@ -18,7 +17,6 @@
             </n-space>
         </n-layout-header>
         <n-layout has-sider bordered class="sec_layout">
-            <!-- 侧边栏 -->
             <n-layout-sider v-if="showSider" bordered show-trigger :native-scrollbar="false" collapse-mode="width">
                 <n-menu
                     :key="selectedKey"
@@ -27,7 +25,6 @@
                     @update:value="handleMenuSelect"
                 />
             </n-layout-sider>
-            <!-- 页面内容 -->
             <n-layout-content :native-scrollbar="false">
                 <div class="content-wrapper">
                     <slot />
@@ -53,7 +50,6 @@ const route = useRoute();
 function renderIcon(icon: Component) {
     return () => h(NIcon, null, { default: () => h(icon) });
 }
-// 菜单配置
 const menuOptions = [
     { label: '服务器管理', key: '/', icon: renderIcon(MenuOutline) },
     { label: '适配器', key: '/adapters', icon: renderIcon(LinkOutline) }
@@ -64,7 +60,6 @@ const selectedKey = computed(() => {
     return route.path;
 });
 
-// 监听路由变化，确保菜单状态同步
 watch(
     () => route.path,
     (newPath) => {
@@ -76,13 +71,11 @@ watch(
 );
 
 const handleMenuSelect = (key: RouteLocationAsPathGeneric) => {
-    console.log('Menu selected:', key, 'Current route:', route.path); // 调试日志
+    console.log('Menu selected:', key, 'Current route:', route.path);
 
-    // 确保key是字符串类型
     const targetPath = String(key);
     console.log('Navigating to:', targetPath);
 
-    // 如果是当前页面，不执行导航
     if (targetPath === route.path) {
         console.log('Same route, skipping navigation');
         return;

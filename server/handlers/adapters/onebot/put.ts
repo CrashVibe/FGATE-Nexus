@@ -5,7 +5,6 @@ export async function handlePut(event: H3Event): Promise<AdapterActionResponse> 
     const body = await readBody(event);
     const id = Number(getRouterParam(event, 'id'));
 
-    // 验证超时时间
     if (body.responseTimeout && body.responseTimeout < 1000) {
         event.node.res.statusCode = 400;
         return {

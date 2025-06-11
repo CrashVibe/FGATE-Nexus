@@ -8,22 +8,17 @@ import type { AdapterFormData, AdapterPayload } from '../../utils/adapters/forms
 import { onebotRules } from '../../utils/adapters/rules';
 import Common from '~/components/Card/Adapter/Common.vue';
 
-// 获取 API 实例
 const { adapterApi } = useApi();
 
-// 状态与引用
 const showModal = ref(false);
 const submitting = ref(false);
 const formRef = ref<any>(null);
 const adapters = ref<onebot_adapters[]>([]);
 const message = useMessage();
-// 添加定时器和最后更新时间
 const refreshTimer = ref<NodeJS.Timeout | null>(null);
 const lastUpdateTime = ref<string>('');
-// 添加编辑状态跟踪
 const editingAdapters = ref<Set<number>>(new Set());
 
-// 默认表单数据
 const defaultOneBotConfig: AdapterFormData['config']['onebot'] = {
     botId: null,
     accessToken: null,
@@ -37,7 +32,6 @@ const formData = ref<AdapterFormData>({
     config: { onebot: { ...defaultOneBotConfig } }
 });
 
-// 校验规则
 const currentRules = computed(() => {
     const baseRules = {
         adapter: { required: true, message: '请选择适配器类型', trigger: ['blur'] }
@@ -53,7 +47,6 @@ const currentRules = computed(() => {
     }
     return baseRules;
 });
-// 重置表单
 function resetFormData() {
     formData.value = {
         adapter_type: '',
@@ -62,32 +55,26 @@ function resetFormData() {
     setTimeout(() => formRef.value?.restoreValidation(), 0);
 }
 
-// 监听对话框打开自动重置
 watch(showModal, (val) => {
     if (val) resetFormData();
 });
 
-// 关闭对话框
 const handleClose = () => {
     showModal.value = false;
 };
 
-// 获取列表
 async function getServerList() {
     try {
         const data = await adapterApi.getAdapters();
         if (data.success && data.data) {
-            // 只更新非编辑状态的适配器
             const newAdapters = data.data.map((newAdapter: any) => {
                 if (editingAdapters.value.has(newAdapter.id)) {
-                    // 保持原有数据，不更新正在编辑的适配器
                     const existingAdapter = adapters.value.find((a: any) => a.id === newAdapter.id);
                     return existingAdapter || newAdapter;
                 }
                 return newAdapter;
             });
             adapters.value = newAdapters;
-            // 更新最后更新时间
             lastUpdateTime.value = new Date().toLocaleString('zh-CN', {
                 year: 'numeric',
                 month: '2-digit',
@@ -105,7 +92,6 @@ async function getServerList() {
     }
 }
 
-// 刷新列表
 const refreshing = ref(false);
 const handleRefresh = async () => {
     refreshing.value = true;
@@ -119,16 +105,13 @@ const handleRefresh = async () => {
     }
 };
 
-// 初始化
 onMounted(() => {
     getServerList();
-    // 启动定时器，每秒刷新一次适配器列表
     refreshTimer.value = setInterval(() => {
         getServerList();
     }, 1000);
 });
 
-// 清理定时器
 onUnmounted(() => {
     if (refreshTimer.value) {
         clearInterval(refreshTimer.value);
@@ -136,7 +119,6 @@ onUnmounted(() => {
     }
 });
 
-// 提交表单
 const handleSubmit = async (e: Event) => {
     e.preventDefault();
     submitting.value = true;
@@ -159,7 +141,6 @@ const handleSubmit = async (e: Event) => {
             };
         }
 
-        // 使用 alova 替代 $fetch
         const response = await adapterApi.addAdapter(payload);
 
         if (response.success) {
@@ -176,7 +157,6 @@ const handleSubmit = async (e: Event) => {
     }
 };
 
-// 处理编辑状态变化
 const handleEditingChange = (adapterId: number, isEditing: boolean) => {
     if (isEditing) {
         editingAdapters.value.add(adapterId);
@@ -185,7 +165,6 @@ const handleEditingChange = (adapterId: number, isEditing: boolean) => {
     }
 };
 
-// 动画处理函数
 const onBeforeCardEnter = (el: Element) => {
     (el as HTMLElement).style.opacity = '0';
     (el as HTMLElement).style.transform = 'scale(0.8) translateY(20px)';
@@ -193,7 +172,7 @@ const onBeforeCardEnter = (el: Element) => {
 
 const onCardEnter = (el: Element, done: () => void) => {
     const index = parseInt((el as HTMLElement).dataset.index || '0');
-    const delay = index * 100; // 每个卡片延迟100ms
+    const delay = index * 100;
 
     setTimeout(() => {
         (el as HTMLElement).style.transition = 'all 0.6s cubic-bezier(0.23, 1, 0.32, 1)';

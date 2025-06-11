@@ -1,5 +1,4 @@
 /* eslint-disable import/first */
-// 数据库初始化
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { Database } from 'bun:sqlite';
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
@@ -15,7 +14,6 @@ async function initDatabase() {
     const dbFilePath = path.resolve('./sqlite.db');
     const isNewDatabase = !fs.existsSync(dbFilePath);
 
-    // 创建 bun:sqlite 客户端
     const client = new Database(dbFilePath);
 
     const db = drizzle(client);
@@ -27,7 +25,6 @@ async function initDatabase() {
     }
 
     try {
-        // 执行迁移
         await migrate(db, {
             migrationsFolder: path.resolve('./migrations')
         });
@@ -50,5 +47,4 @@ async function startApplication() {
     }
 }
 
-// 启动应用
 startApplication();

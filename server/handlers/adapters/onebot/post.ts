@@ -3,11 +3,8 @@ import type { AdapterActionResponse } from '@/server/shared/types/adapters/api';
 
 export async function handlePost(event: H3Event): Promise<AdapterActionResponse> {
     const body = await readBody(event);
-
-    // 验证必要字段
     if (!body.adapter_type || !body.config.botId || !body.config.listenPath) {
         event.node.res.statusCode = 400;
-        // 一个个校验
         if (!body.adapter_type) {
             return {
                 success: false,

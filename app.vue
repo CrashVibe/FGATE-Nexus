@@ -21,20 +21,16 @@ const themeOverrides = {
     }
 };
 
-// 创建Loading Bar的ref
 const loadingBarRef = ref();
 
-// 路由监听和Loading Bar控制
 onMounted(() => {
     console.log('🎯 App mounted');
 
     const router = useRouter();
     let isNavigating = false;
 
-    // 等待loading bar准备好
     nextTick(() => {
         setTimeout(() => {
-            // 安全调用loading bar方法
             const safeCall = (method: string) => {
                 try {
                     if (loadingBarRef.value && typeof loadingBarRef.value[method] === 'function') {
@@ -47,7 +43,6 @@ onMounted(() => {
                 return false;
             };
 
-            // 路由开始时显示Loading Bar
             router.beforeEach((to, from) => {
                 if (to.path !== from.path && !isNavigating) {
                     isNavigating = true;
@@ -56,10 +51,8 @@ onMounted(() => {
                 return true;
             });
 
-            // 路由完成时隐藏Loading Bar
             router.afterEach(() => {
                 if (isNavigating) {
-                    // 短暂延迟确保页面渲染完成
                     setTimeout(() => {
                         safeCall('finish');
                         isNavigating = false;
@@ -67,7 +60,6 @@ onMounted(() => {
                 }
             });
 
-            // 路由错误时显示错误状态
             router.onError((error) => {
                 console.error('❌ Router error:', error);
                 safeCall('error');
@@ -75,7 +67,6 @@ onMounted(() => {
             });
 
 
-            // 测试loading bar
             setTimeout(() => {
                 if (safeCall('start')) {
                     setTimeout(() => {
