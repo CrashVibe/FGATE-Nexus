@@ -19,7 +19,7 @@ export default defineNuxtConfig({
         host: '0.0.0.0',
         port: 3000
     },
-    modules: ['nuxtjs-naive-ui'],
+    modules: ['nuxtjs-naive-ui', '@nuxt/eslint'],
     vite: {
         cacheDir: 'node_modules/.vite_cache',
         optimizeDeps: {
@@ -51,6 +51,11 @@ export default defineNuxtConfig({
             })
         ]
     },
+    watchers: {
+        chokidar: {
+            usePolling: true
+        }
+    },
     app: {
         pageTransition: {
             name: 'page',
@@ -70,12 +75,21 @@ export default defineNuxtConfig({
         minify: true,
         compressPublicAssets: true,
         inlineDynamicImports: true,
+        watchOptions: {
+            usePolling: true
+        },
+        node: true,
         externals: {
             inline: ['vue', '@vue/shared', '@vue/runtime-dom']
         },
         alias: {
             '@vue/runtime-dom': require.resolve('@vue/runtime-dom'),
             '@vue/shared': require.resolve('@vue/shared')
+        },
+        esbuild: {
+            options: {
+                target: 'esnext'
+            }
         }
     },
     build: {

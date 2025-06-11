@@ -19,6 +19,7 @@
         "copy:migrations": "node -e \"const fs=require('fs'); const path=require('path'); if(fs.existsSync('./migrations')) { fs.cpSync('./migrations', './dist/migrations', {recursive: true}); }\""
     },
     "dependencies": {
+        "@nuxt/eslint": "^1.4.1",
         "@vicons/ionicons5": "^0.13.0",
         "@vueuse/core": "^13.3.0",
         "alova": "^3.3.1",
