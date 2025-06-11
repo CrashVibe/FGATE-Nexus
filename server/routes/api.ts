@@ -52,7 +52,7 @@ export default defineWebSocketHandler({
         );
 
         try {
-            wsManager.handleConnection(peer);
+            wsManager.handleConnection(peer as any);
         } catch (error) {
             console.error('处理 WebSocket 连接时发生错误：', error);
             peer.close(4000, '服务器内部错误');
@@ -60,11 +60,11 @@ export default defineWebSocketHandler({
     },
 
     message(peer, message) {
-        wsManager.handleMessage(peer, message.text());
+        wsManager.handleMessage(peer as any, message.text());
     },
 
     close(peer, details) {
-        wsManager.handleDisconnection(peer, details.code, details.reason);
+        wsManager.handleDisconnection(peer as any, details.code, details.reason);
     },
 
     error(peer, error) {

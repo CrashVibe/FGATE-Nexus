@@ -8,7 +8,7 @@ class AdapterManager {
     // 获取所有适配器配置
     async getAllAdapters(): Promise<(onebot_adapters & { connected: boolean })[]> {
         const adapters = await db.select().from(onebot_adaptersData).all();
-        return adapters.map((adapter) => ({
+        return adapters.map((adapter: onebot_adapters) => ({
             ...adapter,
             connected: wsServerManager.hasActiveConnection(adapter.botId)
         }));
@@ -63,10 +63,10 @@ class AdapterManager {
         }
 
         const result = await db.delete(onebot_adaptersData).where(eq(onebot_adaptersData.id, id)).run();
-        if (result.changes > 0) {
+        if ((result as any).changes > 0) {
             wsServerManager.removeAdapter(adapter);
         }
-        return result.changes > 0;
+        return (result as any).changes > 0;
     }
 
     // 启用/禁用适配器
@@ -76,13 +76,13 @@ class AdapterManager {
             .set({ enabled })
             .where(eq(onebot_adaptersData.id, id))
             .run();
-        if (result.changes > 0) {
+        if ((result as any).changes > 0) {
             const adapter = await this.getAdapter(id);
             if (adapter) {
                 wsServerManager.updateAdapter({ ...adapter, enabled });
             }
         }
-        return result.changes > 0;
+        return (result as any).changes > 0;
     }
 }
 

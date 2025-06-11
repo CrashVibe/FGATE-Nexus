@@ -1,5 +1,6 @@
 import type { ServerListResponse, ServerWithStatus } from '~/server/shared/types/server/api';
 import type { AdapterListResponse, AdapterActionResponse } from '~/server/shared/types/adapters/api';
+import type { PlayerListResponse } from '~/server/shared/types/player/api';
 
 export const useApi = () => {
     const { $serverAPI } = useNuxtApp();
@@ -46,8 +47,15 @@ export const useApi = () => {
         deleteAdapter: (id: number, data: any) => $serverAPI.Delete<AdapterActionResponse>(`/adapters/${id}`, data)
     };
 
+    // 玩家相关 API
+    const playerApi = {
+        // 获取玩家列表及社交账号
+        getPlayers: () => $serverAPI.Get<PlayerListResponse>('/players')
+    };
+
     return {
         serverApi,
-        adapterApi
+        adapterApi,
+        playerApi
     };
 };

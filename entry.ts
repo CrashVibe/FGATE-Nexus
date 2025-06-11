@@ -9,6 +9,7 @@ import path from 'node:path';
 const execDir = path.dirname(path.resolve(process.execPath));
 process.chdir(execDir);
 console.log('💼 Working directory set to', process.cwd());
+// @ts-ignore - migrations meta is generated at runtime
 import * as meta from './migrations/meta';
 
 async function initDatabase() {
@@ -43,6 +44,7 @@ async function startApplication() {
     try {
         await initDatabase();
 
+        // @ts-ignore - this file exists only after building the Nuxt app
         await import('./.output/server/index.mjs');
     } catch (e) {
         console.error('应用启动失败:', e);

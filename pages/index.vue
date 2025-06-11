@@ -117,7 +117,6 @@ async function getServerList() {
                 minute: '2-digit',
                 second: '2-digit'
             });
-            console.log('服务器列表:', res.data);
         } else {
             console.error('出错了:', res.message);
         }

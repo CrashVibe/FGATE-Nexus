@@ -39,7 +39,7 @@
 
 <script setup lang="ts">
 import { useBreakpoint, useMemo } from 'vooks';
-import { MenuOutline, LinkOutline } from '@vicons/ionicons5';
+import { MenuOutline, LinkOutline, PeopleOutline } from '@vicons/ionicons5';
 import { useRouter, useRoute, type RouteLocationAsPathGeneric } from 'vue-router';
 import { NLayout, NLayoutHeader, NLayoutSider, NLayoutContent, NMenu, NIcon } from 'naive-ui';
 function useIsMobile() {
@@ -56,35 +56,27 @@ function renderIcon(icon: Component) {
 // 菜单配置
 const menuOptions = [
     { label: '服务器管理', key: '/', icon: renderIcon(MenuOutline) },
-    { label: '适配器', key: '/adapters', icon: renderIcon(LinkOutline) }
+    { label: '适配器', key: '/adapters', icon: renderIcon(LinkOutline) },
+    { label: '玩家列表', key: '/players', icon: renderIcon(PeopleOutline) }
 ];
 
-const selectedKey = computed(() => {
-    console.log('🔄 Default layout - Route changed to:', route.path);
-    return route.path;
-});
+const selectedKey = computed(() => route.path);
 
 // 监听路由变化，确保菜单状态同步
 watch(
     () => route.path,
     (newPath) => {
-        console.log('🔄 Default layout - Route path changed:', newPath);
         nextTick(() => {
-            console.log('🔄 Default layout - Menu should be updated with:', newPath);
+            /* route change handled */
         });
     }
 );
 
 const handleMenuSelect = (key: RouteLocationAsPathGeneric) => {
-    console.log('Menu selected:', key, 'Current route:', route.path); // 调试日志
-
-    // 确保key是字符串类型
     const targetPath = String(key);
-    console.log('Navigating to:', targetPath);
 
     // 如果是当前页面，不执行导航
     if (targetPath === route.path) {
-        console.log('Same route, skipping navigation');
         return;
     }
 
@@ -93,9 +85,7 @@ const handleMenuSelect = (key: RouteLocationAsPathGeneric) => {
     });
 };
 const isMobile = useIsMobile();
-const showSider = useMemo(() => {
-    return !isMobile.value && !isMobile.value;
-});
+const showSider = useMemo(() => !isMobile.value);
 </script>
 
 <style lang="less" scoped>
