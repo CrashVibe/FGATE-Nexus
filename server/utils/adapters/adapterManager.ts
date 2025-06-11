@@ -5,6 +5,21 @@ import { onebot_adapters as onebot_adaptersData } from '../../database/schema';
 import { wsServerManager } from '~/server/utils/adapters/onebot/wsOnebotManager';
 
 class AdapterManager {
+    private static instance: AdapterManager;
+
+    private constructor() {}
+
+    /**
+     * 获取单例实例
+     * @returns {AdapterManager} 单例实例
+     */
+    public static getInstance(): AdapterManager {
+        if (!AdapterManager.instance) {
+            AdapterManager.instance = new AdapterManager();
+        }
+        return AdapterManager.instance;
+    }
+
     // 获取所有适配器配置
     async getAllAdapters(): Promise<(onebot_adapters & { connected: boolean })[]> {
         const adapters = await db.select().from(onebot_adaptersData).all();
@@ -39,7 +54,7 @@ class AdapterManager {
     // 创建新适配器配置
     async createAdapter(config: Omit<onebot_adapters, 'id'>): Promise<onebot_adapters> {
         const result = await db.insert(onebot_adaptersData).values(config).returning().get();
-        wsServerManager.initAdapter(result);
+        await wsServerManager.initAdapter(result);
         return result;
     }
 
@@ -51,7 +66,9 @@ class AdapterManager {
             .where(eq(onebot_adaptersData.id, id))
             .returning()
             .get();
-        wsServerManager.updateAdapter(result);
+        if (result) {
+            await wsServerManager.updateAdapter(result);
+        }
         return result || null;
     }
 
@@ -62,28 +79,31 @@ class AdapterManager {
             return false;
         }
 
-        const result = await db.delete(onebot_adaptersData).where(eq(onebot_adaptersData.id, id)).run();
-        if (result.changes > 0) {
-            wsServerManager.removeAdapter(adapter);
+        try {
+            await db.delete(onebot_adaptersData).where(eq(onebot_adaptersData.id, id));
+            await wsServerManager.removeAdapter(adapter);
+            return true;
+        } catch (error) {
+            console.error('Failed to delete adapter:', error);
+            return false;
         }
-        return result.changes > 0;
     }
 
     // 启用/禁用适配器
     async setAdapterStatus(id: number, enabled: boolean): Promise<boolean> {
-        const result = await db
-            .update(onebot_adaptersData)
-            .set({ enabled })
-            .where(eq(onebot_adaptersData.id, id))
-            .run();
-        if (result.changes > 0) {
+        try {
+            await db.update(onebot_adaptersData).set({ enabled }).where(eq(onebot_adaptersData.id, id));
+
             const adapter = await this.getAdapter(id);
             if (adapter) {
-                wsServerManager.updateAdapter({ ...adapter, enabled });
+                await wsServerManager.updateAdapter({ ...adapter, enabled });
             }
+            return true;
+        } catch (error) {
+            console.error('Failed to update adapter status:', error);
+            return false;
         }
-        return result.changes > 0;
     }
 }
 
-export const adapterManager = new AdapterManager();
+export const adapterManager = AdapterManager.getInstance();

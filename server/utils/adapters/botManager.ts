@@ -10,11 +10,24 @@ interface BotConnection {
 }
 
 class BotManager {
+    private static instance: BotManager;
     private connections: Map<number, BotConnection> = new Map();
     private allowedBots: Set<number>; // 允许连接的QQ号名单
 
-    constructor(allowedBots: number[] = []) {
+    private constructor(allowedBots: number[] = []) {
         this.allowedBots = new Set(allowedBots);
+    }
+
+    /**
+     * 获取单例实例
+     * @param allowedBots - 初始化时允许连接的机器人ID列表（仅在首次创建时有效）
+     * @returns {BotManager} 单例实例
+     */
+    public static getInstance(allowedBots: number[] = []): BotManager {
+        if (!BotManager.instance) {
+            BotManager.instance = new BotManager(allowedBots);
+        }
+        return BotManager.instance;
     }
 
     addConnection(botId: number, ws: WebSocket): boolean {
@@ -79,6 +92,4 @@ class BotManager {
     }
 }
 
-export const botManager = new BotManager();
-
-botManager.addAllowedBot(2959431457);
+export const botManager = BotManager.getInstance();

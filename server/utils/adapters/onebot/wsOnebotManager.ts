@@ -2,28 +2,54 @@ import { WebSocketServer } from 'ws';
 import type { onebot_adapters } from '../../../shared/types/adapters/adapter';
 import { adapterManager } from '../adapterManager';
 import http from 'http';
+import type { Duplex } from 'stream';
 
 class AdapterWebSocketServerManager {
+    private static instance: AdapterWebSocketServerManager;
     private pathMap = new Map<string, Map<string, { wss: WebSocketServer; adapter: onebot_adapters }>>();
     private botIdToPath = new Map<number, string>(); // 新增：快速查找 botId 对应的路径
     private server: http.Server;
     private heartbeatIntervals = new Map<string, NodeJS.Timeout>(); // 新增：集中管理心跳定时器
+    private isClosing = false; // 新增：防止重复关闭
 
-    constructor() {
+    private constructor() {
         this.server = http.createServer();
         this.server.on('upgrade', this.handleUpgrade.bind(this));
+        this.server.on('error', (error: any) => {
+            if (error.code === 'EADDRINUSE') {
+                console.error(`端口 14321 已被占用，请检查是否有其他进程正在使用该端口`);
+                console.error(`您可以使用以下命令检查和终止占用进程：`);
+                console.error(`  lsof -i :14321`);
+                console.error(`  kill -9 <PID>`);
+                process.exit(1);
+            } else {
+                console.error('WebSocket 服务器启动失败:', error);
+                process.exit(1);
+            }
+        });
         this.server.listen(14321, () => {
             console.log('WebSocket 服务器监听 14321');
         });
     }
 
     /**
+     * 获取单例实例
+     * @returns {AdapterWebSocketServerManager} 单例实例
+     */
+    public static getInstance(): AdapterWebSocketServerManager {
+        if (!AdapterWebSocketServerManager.instance) {
+            AdapterWebSocketServerManager.instance = new AdapterWebSocketServerManager();
+        }
+        return AdapterWebSocketServerManager.instance;
+    }
+
+    /**
      * 初始化所有适配器
-     * @return void
+     * @returns {Promise<void>}
      * @throws {Error} 如果适配器初始化失败
      */
-    async initAllAdapters() {
-        this.clearAllAdapters();
+    async initAllAdapters(): Promise<void> {
+        await this.clearAllAdapters();
         const adapters = await adapterManager.getAllAdapters();
 
         const enabledAdapters = adapters.filter((adapter) => adapter.enabled);
@@ -41,10 +67,10 @@ class AdapterWebSocketServerManager {
     /**
      * 初始化单个适配器
      * @param adapter - 适配器配置
-     * @return void
+     * @returns {Promise<void>}
      * @throws {Error} 如果适配器配置不完整或初始化失败
      */
-    async initAdapter(adapter: onebot_adapters) {
+    async initAdapter(adapter: onebot_adapters): Promise<void> {
         const botIdStr = String(adapter.botId);
 
         // 检查是否已存在，使用快速查找
@@ -121,7 +147,12 @@ class AdapterWebSocketServerManager {
         console.log(`已启动适配器: ${adapter.adapterType} (${adapter.botId})`);
     }
 
-    async removeAdapter(adapter: onebot_adapters) {
+    /**
+     * 移除适配器
+     * @param adapter - 适配器配置
+     * @returns {Promise<void>}
+     */
+    async removeAdapter(adapter: onebot_adapters): Promise<void> {
         // 使用快速查找
         const path = this.botIdToPath.get(adapter.botId);
         if (!path) {
@@ -169,7 +200,7 @@ class AdapterWebSocketServerManager {
         console.log(`适配器 ${adapter.adapterType} (${adapter.botId}) 已卸载`);
     }
 
-    private handleUpgrade(req: http.IncomingMessage, socket: any, head: Buffer) {
+    private handleUpgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
         try {
             if (!req.url) {
                 socket.destroy();
@@ -224,7 +255,13 @@ class AdapterWebSocketServerManager {
      * 获取所有适配器的连接状态
      * @return Array<{ botId: number, adapterType: string, listenPath: string, enabled: boolean, connected: boolean }>
      */
-    getConnectionStatus() {
+    getConnectionStatus(): Array<{
+        botId: number;
+        adapterType: string;
+        listenPath: string;
+        enabled: boolean;
+        connected: boolean;
+    }> {
         const status = [];
         for (const [path, botMap] of this.pathMap.entries()) {
             for (const { adapter, wss } of botMap.values()) {
@@ -257,7 +294,11 @@ class AdapterWebSocketServerManager {
         return match ? match.wss.clients.size > 0 : false;
     }
 
-    clearAllAdapters() {
+    /**
+     * 清理所有适配器
+     * @returns {Promise<void>}
+     */
+    async clearAllAdapters(): Promise<void> {
         // 批量处理，提高清理效率
         const closePromises = [];
 
@@ -293,18 +334,17 @@ class AdapterWebSocketServerManager {
         this.heartbeatIntervals.clear();
 
         // 等待所有 WebSocket 关闭
-        Promise.all(closePromises).then(() => {
-            console.log('所有 WebSocket 已关闭');
-        });
+        await Promise.all(closePromises);
+        console.log('所有 WebSocket 已关闭');
     }
 
     /**
      * 更新（重载）某个适配器
      * 先关闭旧连接，再重新初始化
      * @param adapter - 新适配器配置
-     * @returns void
+     * @returns {Promise<void>}
      */
-    async updateAdapter(adapter: onebot_adapters) {
+    async updateAdapter(adapter: onebot_adapters): Promise<void> {
         // 使用快速查找检查是否存在
         const oldPath = this.botIdToPath.get(adapter.botId);
 
@@ -363,6 +403,66 @@ class AdapterWebSocketServerManager {
             console.log(`适配器 ${adapter.adapterType} (${adapter.botId}) 已更新`);
         }
     }
+
+    /**
+     * 关闭服务器并释放端口
+     * @returns {Promise<void>}
+     */
+    public async close(): Promise<void> {
+        if (this.isClosing) {
+            return; // 如果已经在关闭过程中，直接返回
+        }
+        
+        this.isClosing = true;
+        
+        return new Promise((resolve, reject) => {
+            // 清理所有心跳定时器
+            this.heartbeatIntervals.forEach((interval) => {
+                clearInterval(interval);
+            });
+            this.heartbeatIntervals.clear();
+
+            // 关闭所有 WebSocket 连接
+            this.pathMap.forEach((serverMap) => {
+                serverMap.forEach(({ wss }) => {
+                    wss.close();
+                });
+            });
+            this.pathMap.clear();
+            this.botIdToPath.clear();
+
+            // 关闭 HTTP 服务器
+            if (this.server.listening) {
+                this.server.close((error) => {
+                    if (error) {
+                        console.error('关闭服务器时发生错误:', error);
+                        reject(error);
+                    } else {
+                        console.log('WebSocket 服务器已关闭');
+                        resolve();
+                    }
+                });
+            } else {
+                console.log('WebSocket 服务器已关闭');
+                resolve();
+            }
+        });
+    }
 }
 
-export const wsServerManager = new AdapterWebSocketServerManager();
+export const wsServerManager = AdapterWebSocketServerManager.getInstance();
+
+// 优雅关闭：处理进程退出事件
+async function gracefulShutdown(signal: string) {
+    console.log(`\n接收到 ${signal} 信号，正在关闭 WebSocket 服务器...`);
+    try {
+        await wsServerManager.close();
+        process.exit(0);
+    } catch (error) {
+        console.error('关闭服务器时发生错误:', error);
+        process.exit(1);
+    }
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
