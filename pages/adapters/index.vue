@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { AddCircleOutline, RefreshOutline } from '@vicons/ionicons5';
-import AdapterOnebotCard from '~/components/Card/Adapter/OnebotCard.vue';
-import type { onebot_adapters } from '@/server/shared/types/adapters/adapter';
+import type { AdapterUnionType } from '~/server/shared/types/adapters/adapter';
+import { getAdapterComponent, isOnebotAdapter } from '~/utils/adapters/componentMap';
 
 import type { AdapterFormData, AdapterPayload } from '../../utils/adapters/forms';
 import { onebotRules } from '../../utils/adapters/rules';
@@ -23,7 +23,7 @@ const { adapterApi } = useApi();
 const showModal = ref(false);
 const submitting = ref(false);
 const formRef = ref<HTMLFormElement | null>(null);
-const adapters = ref<onebot_adapters[]>([]);
+const adapters = ref<AdapterUnionType[]>([]);
 const message = useMessage();
 const refreshTimer = ref<NodeJS.Timeout | null>(null);
 const lastUpdateTime = ref<string>('');
@@ -75,9 +75,9 @@ function getServerList() {
   useRequest(adapterApi.getAdapters())
     .onSuccess(({ data }) => {
       if (data.success && data.data) {
-        const newAdapters = data.data.map((newAdapter: onebot_adapters) => {
+        const newAdapters = data.data.map((newAdapter: AdapterUnionType) => {
           if (editingAdapters.value.has(newAdapter.id)) {
-            const existingAdapter = adapters.value.find((a: onebot_adapters) => a.id === newAdapter.id);
+            const existingAdapter = adapters.value.find((a: AdapterUnionType) => a.id === newAdapter.id);
             return existingAdapter || newAdapter;
           }
           return newAdapter;
@@ -342,8 +342,8 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
           <n-gi v-for="(adapter, index) in adapters" :key="adapter.id">
             <transition name="card-appear" appear :css="false" @enter="onCardEnter" @before-enter="onBeforeCardEnter">
               <component
-                :is="adapter.adapterType === 'onebot' ? AdapterOnebotCard : Common"
-                :adapter="adapter"
+                :is="getAdapterComponent(adapter.adapterType) || Common"
+                :adapter="isOnebotAdapter(adapter) ? adapter : adapter"
                 :data-index="index"
                 @update="getServerList"
                 @delete="getServerList"

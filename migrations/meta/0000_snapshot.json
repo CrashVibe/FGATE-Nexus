@@ -1,11 +1,11 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "750fdd7c-23b6-4e35-8035-a072f1f8f1c7",
+  "id": "87db49b7-7fd6-4bb8-872d-c334f23f5907",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
-    "advanced_configs": {
-      "name": "advanced_configs",
+    "adapters": {
+      "name": "adapters",
       "columns": {
         "id": {
           "name": "id",
@@ -14,21 +14,15 @@
           "notNull": true,
           "autoincrement": true
         },
-        "server_id": {
-          "name": "server_id",
-          "type": "integer",
+        "type": {
+          "name": "type",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         }
       },
-      "indexes": {
-        "advanced_server_id_idx": {
-          "name": "advanced_server_id_idx",
-          "columns": ["server_id"],
-          "isUnique": true
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -37,17 +31,10 @@
     "onebot_adapters": {
       "name": "onebot_adapters",
       "columns": {
-        "id": {
-          "name": "id",
+        "adapter_id": {
+          "name": "adapter_id",
           "type": "integer",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "adapter_type": {
-          "name": "adapter_type",
-          "type": "text",
-          "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
@@ -84,11 +71,27 @@
       "indexes": {
         "bot_id_idx": {
           "name": "bot_id_idx",
-          "columns": ["bot_id"],
+          "columns": [
+            "bot_id"
+          ],
           "isUnique": true
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "onebot_adapters_adapter_id_adapters_id_fk": {
+          "name": "onebot_adapters_adapter_id_adapters_id_fk",
+          "tableFrom": "onebot_adapters",
+          "tableTo": "adapters",
+          "columnsFrom": [
+            "adapter_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -158,7 +161,9 @@
       "indexes": {
         "player_uuid_idx": {
           "name": "player_uuid_idx",
-          "columns": ["uuid"],
+          "columns": [
+            "uuid"
+          ],
           "isUnique": true
         }
       },
@@ -167,8 +172,12 @@
           "name": "players_social_account_id_social_accounts_id_fk",
           "tableFrom": "players",
           "tableTo": "social_accounts",
-          "columnsFrom": ["social_account_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "social_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -214,21 +223,46 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "adapter_id": {
+          "name": "adapter_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
         "name_idx": {
           "name": "name_idx",
-          "columns": ["name"],
+          "columns": [
+            "name"
+          ],
           "isUnique": true
         },
         "token_idx": {
           "name": "token_idx",
-          "columns": ["token"],
+          "columns": [
+            "token"
+          ],
           "isUnique": true
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "servers_adapter_id_adapters_id_fk": {
+          "name": "servers_adapter_id_adapters_id_fk",
+          "tableFrom": "servers",
+          "tableTo": "adapters",
+          "columnsFrom": [
+            "adapter_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

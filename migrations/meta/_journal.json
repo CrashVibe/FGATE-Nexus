@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1749682667370,
-      "tag": "0000_round_mindworm",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1749737265567,
-      "tag": "0001_faulty_sleepwalker",
+      "when": 1749740177329,
+      "tag": "0000_lyrical_glorian",
       "breakpoints": true
     }
   ]

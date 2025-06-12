@@ -1,16 +1,15 @@
-CREATE TABLE `advanced_configs` (
+CREATE TABLE `adapters` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`server_id` integer NOT NULL
+	`type` text NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `advanced_server_id_idx` ON `advanced_configs` (`server_id`);--> statement-breakpoint
 CREATE TABLE `onebot_adapters` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`adapter_type` text NOT NULL,
+	`adapter_id` integer PRIMARY KEY NOT NULL,
 	`bot_id` integer NOT NULL,
 	`access_token` text,
 	`response_timeout` integer NOT NULL,
-	`enabled` integer DEFAULT true NOT NULL
+	`enabled` integer DEFAULT true NOT NULL,
+	FOREIGN KEY (`adapter_id`) REFERENCES `adapters`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `bot_id_idx` ON `onebot_adapters` (`bot_id`);--> statement-breakpoint
@@ -32,7 +31,9 @@ CREATE TABLE `servers` (
 	`name` text NOT NULL,
 	`token` text NOT NULL,
 	`software` text,
-	`version` text
+	`version` text,
+	`adapter_id` integer,
+	FOREIGN KEY (`adapter_id`) REFERENCES `adapters`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `name_idx` ON `servers` (`name`);--> statement-breakpoint

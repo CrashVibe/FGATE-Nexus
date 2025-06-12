@@ -29,9 +29,8 @@ useRequest(accountApi.getAccounts())
     else accounts.value = [];
     if (!data.success) message.error(data.message || '获取账号列表失败');
   })
-  .onError((event) => {
-    // @ts-expect-error alova event.data 结构类型推断不全
-    message.error(event.data?.message || '获取账号列表失败');
+  .onError(() => {
+    message.error('获取账号列表失败');
     accounts.value = [];
   })
   .onComplete(() => {

@@ -3,26 +3,87 @@
     <div class="card-content">
       <div key="view">
         <div class="header">
-          <n-text strong class="adapter-name">{{ adapter.adapterType || '未知' }} </n-text>
-          <n-tag :bordered="false" :type="adapter.enabled ? 'success' : 'error'" size="small">
-            {{ adapter.enabled !== undefined ? (adapter.enabled ? '启用' : '禁用') : '未知状态' }}
+          <n-text strong class="adapter-name">{{ getDisplayName(adapter) }}</n-text>
+          <n-tag :bordered="false" :type="getStatusType(adapter)" size="small">
+            {{ getStatusText(adapter) }}
           </n-tag>
         </div>
-        <n-text strong>
-          <span>未知响应器类型</span>
-        </n-text>
+        <div class="info-section">
+          <div class="info-item">
+            <span>适配器 ID:</span>
+            <span>{{ adapter.id }}</span>
+          </div>
+          <div class="info-item">
+            <span>类型:</span>
+            <span>{{ adapter.type || '未知' }}</span>
+          </div>
+          <div v-if="adapter.detail" class="detail-section">
+            <n-text class="detail-title">详细信息:</n-text>
+            <div class="detail-content">
+              <pre>{{ JSON.stringify(adapter.detail, null, 2) }}</pre>
+            </div>
+          </div>
+        </div>
+        <div class="button-row">
+          <n-button type="error" size="small" @click="handleDelete"> 删除 </n-button>
+        </div>
       </div>
     </div>
   </n-card>
 </template>
 
 <script setup lang="ts">
-defineProps<{
-  adapter: {
-    adapterType?: string;
-    enabled?: boolean;
-  };
+import type { AdapterUnionType } from '~/server/shared/types/adapters/adapter';
+import { getAdapterTypeDisplayName, isOnebotAdapter, isWebSocketAdapter } from '~/utils/adapters/componentMap';
+
+interface Props {
+  adapter: AdapterUnionType;
+}
+
+defineProps<Props>();
+
+const emit = defineEmits<{
+  delete: [];
+  update: [];
 }>();
+
+// 获取显示名称
+function getDisplayName(adapter: AdapterUnionType): string {
+  return getAdapterTypeDisplayName(adapter.type) || adapter.type || '未知适配器';
+}
+
+// 获取状态类型
+function getStatusType(adapter: AdapterUnionType): 'success' | 'error' | 'default' {
+  if (adapter.connected !== undefined) {
+    return adapter.connected ? 'success' : 'error';
+  }
+
+  // 使用类型守卫检查具体类型
+  if (isOnebotAdapter(adapter) || isWebSocketAdapter(adapter)) {
+    return adapter.detail?.enabled ? 'success' : 'error';
+  }
+
+  return 'default';
+}
+
+// 获取状态文本
+function getStatusText(adapter: AdapterUnionType): string {
+  if (adapter.connected !== undefined) {
+    return adapter.connected ? '已连接' : '未连接';
+  }
+
+  // 使用类型守卫检查具体类型
+  if (isOnebotAdapter(adapter) || isWebSocketAdapter(adapter)) {
+    return adapter.detail?.enabled ? '启用' : '禁用';
+  }
+
+  return '未知状态';
+}
+
+// 处理删除
+function handleDelete() {
+  emit('delete');
+}
 </script>
 
 <style scoped lang="less">
@@ -81,6 +142,38 @@ defineProps<{
   gap: 8px;
   font-size: 14px;
 }
+
+.info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-section {
+  margin-top: 12px;
+  padding: 8px;
+  background-color: var(--n-color-target);
+  border-radius: 4px;
+}
+
+.detail-title {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.detail-content {
+  pre {
+    font-size: 10px;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 100px;
+    overflow-y: auto;
+  }
+}
+
 .token-text {
   display: flex;
   align-items: center;

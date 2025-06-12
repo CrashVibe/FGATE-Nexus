@@ -29,9 +29,8 @@ useRequest(playerApi.getPlayers())
     else players.value = [];
     if (!data.success) message.error(data.message || '获取玩家列表失败');
   })
-  .onError((event) => {
-    // @ts-expect-error alova event.data 结构类型推断不全
-    message.error(event.data?.message || '获取玩家列表失败');
+  .onError(() => {
+    message.error('获取玩家列表失败');
     players.value = [];
   })
   .onComplete(() => {

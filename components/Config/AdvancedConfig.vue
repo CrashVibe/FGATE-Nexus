@@ -88,7 +88,8 @@ const serverStatus = ref<ServerWithStatus>({
   version: '',
   id: 0,
   name: '',
-  token: ''
+  token: '',
+  adapter_id: null
 });
 
 const operating = ref(false);

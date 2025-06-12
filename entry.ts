@@ -1,4 +1,3 @@
-/* eslint-disable import/first */
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { Database } from 'bun:sqlite';
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
@@ -8,7 +7,6 @@ import path from 'node:path';
 const execDir = path.dirname(path.resolve(process.execPath));
 process.chdir(execDir);
 console.log('💼 Working directory set to', process.cwd());
-import * as meta from './migrations/meta';
 
 async function initDatabase() {
   const dbFilePath = path.resolve('./sqlite.db');
@@ -40,7 +38,14 @@ async function startApplication() {
   try {
     await initDatabase();
 
-    await import('./.output/server/index.mjs');
+    // 动态导入构建后的服务器文件
+    const serverPath = './.output/server/index.mjs';
+    if (fs.existsSync(serverPath)) {
+      await import(serverPath);
+    } else {
+      console.warn('⚠️  服务器文件不存在，请先构建项目');
+      process.exit(1);
+    }
   } catch (e) {
     console.error('应用启动失败:', e);
     process.exit(1);

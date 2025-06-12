@@ -17,9 +17,8 @@ export function useServerData() {
     .onSuccess(({ data }) => {
       serverData.value = data;
     })
-    .onError((event) => {
-      // @ts-expect-error alova event.data 结构类型推断不全
-      message.error(event.data?.message || '获取服务器信息失败');
+    .onError(() => {
+      message.error('获取服务器信息失败');
     })
     .onComplete(() => {
       loading.value = false;

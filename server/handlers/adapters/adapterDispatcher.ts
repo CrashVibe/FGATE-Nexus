@@ -1,6 +1,11 @@
 import type { H3Event } from 'h3';
+import type { ApiResponse } from '~/server/shared/types/server/api';
 
-const handlerMap: Record<string, Record<string, () => Promise<any>>> = {
+// 定义适配器处理器函数类型
+type AdapterHandler = (event: H3Event) => Promise<ApiResponse<unknown>>;
+type AdapterHandlerFactory = () => Promise<AdapterHandler>;
+
+const handlerMap: Record<string, Record<string, AdapterHandlerFactory>> = {
   onebot: {
     POST: () => import('./onebot/post').then((m) => m.handlePost),
     PUT: () => import('./onebot/put').then((m) => m.handlePut),

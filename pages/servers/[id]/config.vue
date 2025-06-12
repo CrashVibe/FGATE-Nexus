@@ -49,12 +49,18 @@ const route = useRoute();
 const router = useRouter();
 const { serverName } = useServerData();
 
+// 定义菜单选项类型
+interface MenuOption {
+  label: string;
+  key: string;
+  desc?: string;
+  icon?: () => import('vue').VNode;
+}
+
 const menuOptions = inject(
   'menuOptions',
   computed(() => [])
-) as unknown as import('vue').Ref<
-  Array<{ label: string; key: string; desc?: string; icon?: () => import('vue').VNode }>
->;
+) as import('vue').Ref<MenuOption[]>;
 
 const desc = computed(() => {
   const found = menuOptions.value.find((item) => item.key === route.path);

@@ -27,7 +27,7 @@ export const useApi = () => {
     getAdapters: () => $serverAPI.Get<AdapterListResponse>('/adapters'),
     addAdapter: (data: AdapterPayload) => $serverAPI.Post<ApiResponse<void>>('/adapters', data),
     updateAdapter: (id: number, data: AdapterPayload) => $serverAPI.Put<ApiResponse<void>>(`/adapters/${id}`, data),
-    deleteAdapter: (id: number, data: AdapterPayload) => $serverAPI.Delete<ApiResponse<void>>(`/adapters/${id}`, data)
+    deleteAdapter: (id: number) => $serverAPI.Delete<ApiResponse<void>>(`/adapters/${id}`)
   };
 
   const playerApi = {

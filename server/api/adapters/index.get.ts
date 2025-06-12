@@ -1,7 +1,7 @@
 import type { ApiResponse } from '~/server/shared/types/server/api';
-import type { onebot_adapters } from '~/server/shared/types/adapters/adapter';
+import type { AdapterUnionType } from '~/server/utils/adapters/adapterManager';
 
-export default defineEventHandler(async (): Promise<ApiResponse<onebot_adapters[]>> => {
+export default defineEventHandler(async (): Promise<ApiResponse<AdapterUnionType[]>> => {
   try {
     const { adapterManager } = await import('~/server/utils/adapters/adapterManager');
     return {

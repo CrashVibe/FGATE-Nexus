@@ -74,6 +74,8 @@ import { useMessage } from 'naive-ui';
 import { useRequest } from 'alova/client';
 import { useBreakpoint, useMemo } from 'vooks';
 import type { ServerWithStatus } from '~/server/shared/types/server/api';
+import type { AdapterUnionType } from '~/server/shared/types/adapters/adapter';
+import { isOnebotAdapter, isWebSocketAdapter } from '~/utils/adapters/componentMap';
 
 // 响应式断点检测
 function useIsMobile() {
@@ -104,12 +106,23 @@ const saving = ref(false);
 // 适配器选项
 const adapterOptions = ref<{ label: string; value: number }[]>([]);
 
+// 获取适配器标签
+function getAdapterLabel(adapter: AdapterUnionType): string {
+  if (isOnebotAdapter(adapter)) {
+    return `OneBot ${adapter.detail?.botId || adapter.id}`;
+  }
+  if (isWebSocketAdapter(adapter)) {
+    return `WebSocket ${adapter.detail?.url || adapter.id}`;
+  }
+  return `${adapter.type} ${adapter.id}`;
+}
+
 // 获取适配器列表
 const fetchAdapterOptions = () => {
   useRequest(adapterApi.getAdapters()).onSuccess(({ data }) => {
     if (data.success && data.data) {
       adapterOptions.value = data.data.map((adapter) => ({
-        label: `OneBot ${adapter.botId}`,
+        label: getAdapterLabel(adapter),
         value: adapter.id
       }));
     }
