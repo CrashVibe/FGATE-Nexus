@@ -43,7 +43,7 @@ const formData = ref<AdapterFormData>({
 
 const currentRules = computed(() => {
   const baseRules = {
-    adapter: { required: true, message: '请选择适配器类型', trigger: ['blur'] }
+    adapter: { required: true, message: '请选择 Bot 实例类型', trigger: ['blur'] }
   };
 
   if (formData.value.adapter_type === 'onebot') {
@@ -92,11 +92,11 @@ function getServerList() {
           second: '2-digit'
         });
       } else {
-        message.error(data.message || '获取适配器失败');
+        message.error(data.message || '获取 Bot 实例失败');
       }
     })
     .onError(() => {
-      message.error('获取适配器列表失败');
+      message.error('获取 Bot 实例列表失败');
     });
 }
 
@@ -149,15 +149,15 @@ const handleSubmit = (e: Event) => {
     useRequest(adapterApi.addAdapter(payload))
       .onSuccess(({ data }) => {
         if (data.success) {
-          message.success('适配器创建成功');
+          message.success('Bot 实例创建成功');
           handleClose();
           getServerList();
         } else {
-          message.error(data.message || '提交适配器失败');
+          message.error(data.message || '提交 Bot 实例失败');
         }
       })
       .onError(() => {
-        message.error('提交适配器失败');
+        message.error('提交 Bot 实例失败');
       })
       .onComplete(() => {
         submitting.value = false;
@@ -202,8 +202,8 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
           <div class="head-text" :class="{ 'mobile-layout': isMobile }">
             <div class="title-section">
               <n-text strong>
-                <h1>适配器列表</h1>
-                <p>管理多个适配器，点击进入详细配置。</p>
+                <h1>Bot 实例列表</h1>
+                <p>管理多个 Bot 实例，点击进入详细配置。</p>
                 <p v-if="lastUpdateTime" class="last-update">最后更新: {{ lastUpdateTime }}</p>
               </n-text>
             </div>
@@ -235,27 +235,27 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
                   <template #icon>
                     <n-icon><AddCircleOutline /></n-icon>
                   </template>
-                  添加适配器
+                  添加 Bot 实例
                 </n-button>
               </n-space>
             </div>
           </div>
         </div>
 
-        <n-empty v-if="!adapters.length" description="您还没有任何适配器">
+        <n-empty v-if="!adapters.length" description="您还没有任何 Bot 实例">
           <template #extra>
             <n-button type="primary" :size="isMobile ? 'medium' : 'small'" :block="isMobile" @click="showModal = true">
               <template #icon>
                 <n-icon><AddCircleOutline /></n-icon>
               </template>
-              创建新适配器
+              创建新 Bot 实例
             </n-button>
           </template>
         </n-empty>
 
         <n-modal
           v-model:show="showModal"
-          title="新建适配器"
+          title="新建 Bot 实例"
           preset="dialog"
           :show-icon="false"
           :style="{
@@ -311,7 +311,7 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
                     <template #suffix>毫秒</template>
                   </n-input-number>
                 </n-form-item>
-                <n-form-item label="启用适配器" path="config.onebot.enabled">
+                <n-form-item label="是否启用" path="config.onebot.enabled">
                   <n-switch v-model:value="formData.config.onebot.enabled" />
                 </n-form-item>
               </div>
@@ -333,7 +333,7 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
                 :block="isMobile"
                 @click="handleSubmit"
               >
-                {{ submitting ? '创建中...' : '创建适配器' }}
+                {{ submitting ? '创建中...' : '创建 Bot 实例' }}
               </n-button>
             </n-space>
           </template>

@@ -63,7 +63,7 @@ const menuOptions = computed(() => {
   const menu: Array<{ label: string; key: string; icon: ReturnType<typeof renderIcon>; desc?: string }> = [];
 
   menu.push({ label: '服务器管理', key: '/', icon: renderIcon(MenuOutline) });
-  menu.push({ label: '适配器', key: '/adapters', icon: renderIcon(LinkOutline) });
+  menu.push({ label: 'Bot 实例', key: '/adapters', icon: renderIcon(LinkOutline) });
   menu.push({ label: '玩家列表', key: '/players', icon: renderIcon(PeopleOutline) });
   menu.push({ label: '社交账号', key: '/accounts', icon: renderIcon(PersonCircleOutline) });
 
