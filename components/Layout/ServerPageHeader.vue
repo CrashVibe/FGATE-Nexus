@@ -1,15 +1,20 @@
 <template>
     <div class="header">
-        <n-space justify="space-between" align="center">
-            <div>
-                <n-text tag="h1" style="font-size: 24px; margin: 0">{{ title }}</n-text>
-                <n-text depth="3">{{ serverName }}</n-text>
+        <n-space
+            :justify="isMobile ? 'center' : 'space-between'"
+            :align="isMobile ? 'stretch' : 'center'"
+            :vertical="isMobile"
+            :size="isMobile ? 'small' : 'medium'"
+        >
+            <div class="title-section" :class="{ 'mobile-center': isMobile }">
+                <n-text tag="h1" :style="{ fontSize: isMobile ? '20px' : '24px', margin: 0 }">{{ title }}</n-text>
+                <n-text depth="3" :size="isMobile ? 'small' : 'medium'">{{ serverName }}</n-text>
             </div>
-            <n-button quaternary @click="goBack">
+            <n-button quaternary :size="isMobile ? 'medium' : 'large'" :block="isMobile" @click="goBack">
                 <template #icon>
                     <n-icon :component="ArrowBackOutline" />
                 </template>
-                {{ backButtonText || '返回配置总览' }}
+                {{ isMobile ? '返回' : backButtonText || '返回配置总览' }}
             </n-button>
         </n-space>
     </div>
@@ -18,6 +23,17 @@
 <script setup lang="ts">
 import { ArrowBackOutline } from '@vicons/ionicons5';
 import { useRouter } from 'vue-router';
+import { useBreakpoint, useMemo } from 'vooks';
+
+// 响应式断点检测
+function useIsMobile() {
+    const breakpointRef = useBreakpoint();
+    return useMemo(() => {
+        return breakpointRef.value === 'xs' || breakpointRef.value === 's';
+    });
+}
+
+const isMobile = useIsMobile();
 
 interface Props {
     title: string;
@@ -50,5 +66,24 @@ const goBack = () => {
 <style scoped lang="less">
 .header {
     margin-bottom: 24px;
+}
+
+.title-section {
+    &.mobile-center {
+        text-align: center;
+    }
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+    .header {
+        margin-bottom: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        margin-bottom: 12px;
+    }
 }
 </style>

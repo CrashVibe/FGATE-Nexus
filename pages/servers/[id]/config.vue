@@ -1,7 +1,7 @@
 <template>
     <ServerPageWrapper>
         <!-- 页面标题 -->
-        <ServerPageHeader title="服务器配置" :server-name="serverName" back-button-text="返回" />
+        <ServerPageHeader title="服务器配置" :server-name="serverName" back-button-text="服务器列表" back-path="/" />
 
         <!-- 简介卡片 -->
         <n-card v-if="desc" size="small" class="desc-card">
@@ -9,7 +9,7 @@
         </n-card>
 
         <!-- 配置选项卡片 -->
-        <n-grid cols="1 600:2 900:3" x-gap="20" y-gap="20" :item-responsive="true">
+        <n-grid :cols="isMobile ? 1 : '1 600:2 900:3'" x-gap="20" y-gap="20" :item-responsive="true">
             <n-gi v-for="menuItem in configMenuItems" :key="menuItem.key" :span="getCardSpan(menuItem.label)">
                 <n-card :title="menuItem.label" hoverable class="config-card" @click="navigateToMenuItem(menuItem.key)">
                     <template #header-extra>
@@ -26,9 +26,20 @@
 import { computed, inject, h } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { SettingsOutline } from '@vicons/ionicons5';
+import { useBreakpoint, useMemo } from 'vooks';
 import ServerPageWrapper from '~/components/Layout/ServerPageWrapper.vue';
 import ServerPageHeader from '~/components/Layout/ServerPageHeader.vue';
 import { useServerData } from '~/composables/useServerData';
+
+// 响应式断点检测
+function useIsMobile() {
+    const breakpointRef = useBreakpoint();
+    return useMemo(() => {
+        return breakpointRef.value === 'xs' || breakpointRef.value === 's';
+    });
+}
+
+const isMobile = useIsMobile();
 
 definePageMeta({
     layout: 'servere-edit'
@@ -52,7 +63,9 @@ const desc = computed(() => {
 
 // 过滤出配置相关的菜单项
 const configMenuItems = computed(() => {
-    return menuOptions.value.filter((item) => item.key !== '/' && item.key.includes('/servers/'));
+    return menuOptions.value.filter(
+        (item) => item.key !== '/' && item.key.includes('/servers/') && !item.key.includes('/config')
+    );
 });
 
 const navigateToMenuItem = (key: string) => {
@@ -102,12 +115,65 @@ const getCardSpan = (title: string) => {
 }
 
 // 响应式调整
-@media (max-width: 480px) {
+@media (max-width: 768px) {
     .config-card {
+        &:hover {
+            transform: none; // 移动端禁用hover变换
+        }
+
         :deep(.n-card__header) {
             .n-card__header__main {
                 font-size: 15px;
             }
+
+            .n-card__header__extra {
+                .n-icon {
+                    font-size: 18px;
+                }
+            }
+        }
+
+        :deep(.n-card__content) {
+            font-size: 13px;
+            line-height: 1.4;
+        }
+    }
+
+    .desc-card {
+        margin-bottom: 16px;
+
+        :deep(.n-card__content) {
+            font-size: 13px;
+            line-height: 1.4;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .config-card {
+        :deep(.n-card__header) {
+            .n-card__header__main {
+                font-size: 14px;
+            }
+
+            .n-card__header__extra {
+                .n-icon {
+                    font-size: 16px;
+                }
+            }
+        }
+
+        :deep(.n-card__content) {
+            font-size: 12px;
+            padding-top: 6px;
+        }
+    }
+
+    .desc-card {
+        margin-bottom: 12px;
+
+        :deep(.n-card__content) {
+            font-size: 12px;
         }
     }
 }

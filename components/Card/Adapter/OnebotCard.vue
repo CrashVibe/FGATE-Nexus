@@ -29,10 +29,34 @@
                         <n-form-item label="启用适配器" :show-feedback="false">
                             <n-switch v-model:value="editForm.enabled" />
                         </n-form-item>
-                        <div class="button-row">
-                            <n-button type="primary" :loading="loading" @click.stop="saveEdit">保存</n-button>
-                            <n-button secondary :disabled="loading" @click.stop="cancelEdit">取消</n-button>
-                            <n-button type="error" :loading="loading" @click.stop="deleteAdapter">删除</n-button>
+                        <div class="button-row" :class="{ 'mobile-layout': isMobile }">
+                            <n-button
+                                type="primary"
+                                :loading="loading"
+                                :size="isMobile ? 'small' : 'medium'"
+                                :block="isMobile"
+                                @click.stop="saveEdit"
+                            >
+                                保存
+                            </n-button>
+                            <n-button
+                                secondary
+                                :disabled="loading"
+                                :size="isMobile ? 'small' : 'medium'"
+                                :block="isMobile"
+                                @click.stop="cancelEdit"
+                            >
+                                取消
+                            </n-button>
+                            <n-button
+                                type="error"
+                                :loading="loading"
+                                :size="isMobile ? 'small' : 'medium'"
+                                :block="isMobile"
+                                @click.stop="deleteAdapter"
+                            >
+                                删除
+                            </n-button>
                         </div>
                     </n-form>
                 </div>
@@ -91,6 +115,17 @@ import { useMessage, useDialog } from 'naive-ui';
 import type { onebot_adapters } from '@/server/shared/types/adapters/adapter';
 import { EyeOutline, EyeOff } from '@vicons/ionicons5';
 import { useRequest } from 'alova/client';
+import { useBreakpoint, useMemo } from 'vooks';
+
+// 响应式断点检测
+function useIsMobile() {
+    const breakpointRef = useBreakpoint();
+    return useMemo(() => {
+        return breakpointRef.value === 'xs' || breakpointRef.value === 's';
+    });
+}
+
+const isMobile = useIsMobile();
 const { $serverAPI } = useNuxtApp();
 
 const props = defineProps<{
@@ -283,5 +318,57 @@ function deleteAdapter() {
     gap: 12px;
     margin-top: 12px;
     flex-direction: row-reverse;
+
+    &.mobile-layout {
+        flex-direction: column;
+        gap: 8px;
+
+        .n-button {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+    .adapter-card {
+        &:hover {
+            transform: translateY(-2px);
+        }
+    }
+
+    .card-content {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .adapter-name {
+        font-size: 16px;
+    }
+
+    .info-item {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .card-content {
+        padding: 10px;
+        gap: 8px;
+    }
+
+    .adapter-name {
+        font-size: 15px;
+    }
+
+    .header {
+        gap: 6px;
+    }
+
+    .info-item {
+        font-size: 12px;
+        gap: 6px;
+    }
 }
 </style>

@@ -9,22 +9,24 @@
             @mouseleave="hover = false"
             @click="goToServerConfig"
         >
-            <div class="card-content">
+            <div class="card-content" :class="{ 'mobile-layout': isMobile }">
                 <div class="header">
                     <div class="name-with-status">
                         <n-text strong class="server-name">{{ server.name }}</n-text>
                         <n-tag
                             :type="server.isOnline ? 'success' : 'error'"
                             :bordered="false"
-                            size="small"
+                            :size="isMobile ? 'tiny' : 'small'"
                             class="status-tag"
                         >
                             {{ server.isOnline ? '在线' : '离线' }}
                         </n-tag>
                     </div>
+                    <!-- 移动端不显示 version-tag，合并到 software-info -->
                     <n-tag
+                        v-if="!isMobile"
                         :bordered="false"
-                        size="small"
+                        :size="'small'"
                         class="version-tag"
                         :type="server.isOnline ? 'default' : 'warning'"
                     >
@@ -32,36 +34,57 @@
                     </n-tag>
                 </div>
 
-                <div class="software-info" :class="{ 'depth-3': !server.isOnline }">
-                    <n-image :src="getSoftwareIcon(server.software) as string" style="width: 20px; height: 20px" />
+                <!-- 移动端合并 version-tag 到 software-info -->
+                <div class="software-info" :class="{ 'depth-3': !server.isOnline, 'with-version': isMobile }">
+                    <n-image
+                        preview-disabled
+                        :src="getSoftwareIcon(server.software) as string"
+                        :style="{ width: isMobile ? '16px' : '20px', height: isMobile ? '16px' : '20px' }"
+                    />
                     <n-text :depth="server.isOnline ? 3 : 3" class="software-text">
-                        {{ server.software || 'Unknown software' }}
+                        {{ server.software || '未知服务器端' }}
                     </n-text>
+                    <n-tag
+                        v-if="isMobile"
+                        :bordered="false"
+                        :size="'tiny'"
+                        class="version-tag"
+                        :type="server.isOnline ? 'default' : 'warning'"
+                        style="margin-left: 6px"
+                    >
+                        {{ getVersion(server.version) }}
+                    </n-tag>
                 </div>
 
                 <div class="token-section">
                     <div class="token-label">
-                        <n-text depth="3">Token:</n-text>
+                        <n-text :depth="3" :style="{ fontSize: isMobile ? '12px' : '14px' }">Token:</n-text>
                         <n-tooltip trigger="hover" placement="top">
                             <template #trigger>
-                                <n-icon size="16" :depth="3" class="info-icon">
+                                <n-icon :size="isMobile ? '14' : '16'" :depth="3" class="info-icon">
                                     <InformationCircleOutline />
                                 </n-icon>
                             </template>
-                            双击令牌或点击复制按钮进行复制
+                            {{ isMobile ? '点击复制' : '双击令牌或点击复制按钮进行复制' }}
                         </n-tooltip>
                     </div>
 
                     <div class="token-display">
                         <n-input-group>
                             <n-input
-                                :value="showToken ? server.token : '•'.repeat(16)"
+                                :value="showToken ? server.token : '•'.repeat(isMobile ? 12 : 16)"
                                 readonly
                                 :depth="showToken ? 3 : 2"
+                                :size="isMobile ? 'small' : 'medium'"
                                 class="token-input"
                                 @click="copyTokenToClipboard"
                             />
-                            <n-button tertiary type="primary" @click.stop="copyTokenToClipboard">
+                            <n-button
+                                tertiary
+                                type="primary"
+                                :size="isMobile ? 'small' : 'medium'"
+                                @click.stop="copyTokenToClipboard"
+                            >
                                 <template #icon>
                                     <n-icon>
                                         <svg
@@ -91,6 +114,17 @@ import { ref } from 'vue';
 import type { ServerWithStatus } from '~/server/shared/types/server/api';
 import { InformationCircleOutline } from '@vicons/ionicons5';
 import MinecraftDefaultIcon from '@/assets/icon/software/minecraft.svg';
+import { useBreakpoint, useMemo } from 'vooks';
+
+// 响应式断点检测
+function useIsMobile() {
+    const breakpointRef = useBreakpoint();
+    return useMemo(() => {
+        return breakpointRef.value === 'xs' || breakpointRef.value === 's';
+    });
+}
+
+const isMobile = useIsMobile();
 
 const props = defineProps<{
     server: ServerWithStatus;
@@ -109,7 +143,7 @@ const goToServerConfig = () => {
 
 function getVersion(original: string | null): string {
     if (!original) {
-        return 'Unknown version';
+        return '未知版本';
     }
 
     const regex = /^([\d.]+-\d+-[a-f0-9]+)\s+\(MC:\s*([^)]+)\)/;
@@ -198,6 +232,36 @@ const getSoftwareIcon = (software: string | null) => {
     display: flex;
     flex-direction: column;
     gap: 12px;
+
+    &.mobile-layout {
+        gap: 8px;
+
+        .header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 6px;
+
+            .name-with-status {
+                justify-content: space-between;
+            }
+
+            .version-tag {
+                align-self: flex-end;
+                margin-top: -2px;
+            }
+        }
+
+        .software-info {
+            margin-bottom: 12px;
+            gap: 6px;
+        }
+
+        .token-section {
+            .token-label {
+                margin-bottom: 6px;
+            }
+        }
+    }
 }
 
 .header {
@@ -238,6 +302,10 @@ const getSoftwareIcon = (software: string | null) => {
     gap: 8px;
     margin-bottom: 16px;
     transition: opacity 0.3s ease;
+
+    &.with-version {
+        gap: 4px;
+    }
 }
 
 .token-label {
@@ -257,6 +325,57 @@ const getSoftwareIcon = (software: string | null) => {
 
 .token-display {
     cursor: pointer;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+    .server-card {
+        &:hover {
+            transform: translateY(-2px);
+        }
+    }
+
+    .server-name {
+        font-size: 16px;
+    }
+
+    .software-info {
+        gap: 6px;
+        margin-bottom: 12px;
+
+        .software-text {
+            font-size: 13px;
+        }
+    }
+
+    .token-section {
+        .token-input {
+            font-size: 12px;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .card-content {
+        gap: 6px;
+    }
+
+    .server-name {
+        font-size: 15px;
+    }
+
+    .header {
+        gap: 4px;
+    }
+
+    .name-with-status {
+        gap: 4px;
+    }
+
+    .software-info {
+        gap: 4px;
+        margin-bottom: 8px;
+    }
 }
 
 .card-appear-enter-active {

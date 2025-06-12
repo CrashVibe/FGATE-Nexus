@@ -5,7 +5,6 @@
 html,
 body,
 #app {
-    overflow: hidden;
     height: 100%;
     padding: 0;
     margin: 0;
@@ -175,6 +174,123 @@ html.dark {
     .layout-enter-from,
     .layout-leave-to {
         transform: scale(1.02);
+    }
+}
+
+/* 移动端通用优化 */
+@media (max-width: 768px) {
+    /* 页面容器调整 */
+    .page-container {
+        padding: 12px;
+    }
+
+    /* Naive UI 组件移动端优化 */
+    :deep(.n-button) {
+        min-height: 40px !important;
+        padding: 10px 16px !important;
+        font-size: 14px !important;
+
+        /* 确保按钮文字居中 */
+        &.n-button--block {
+            justify-content: center !important;
+        }
+
+        /* 图标按钮优化 */
+        .n-button__icon {
+            margin-right: 6px !important;
+        }
+    }
+
+    :deep(.n-input) {
+        min-height: 36px !important;
+    }
+
+    :deep(.n-select) {
+        min-height: 36px !important;
+    }
+
+    /* 模态框移动端优化 */
+    :deep(.n-modal) {
+        .n-card {
+            margin: 12px !important;
+            border-radius: 12px !important;
+        }
+
+        .n-card__content {
+            padding: 16px !important;
+        }
+    }
+
+    /* 网格系统优化 */
+    :deep(.n-grid) {
+        margin: 0 -8px !important;
+
+        .n-grid-item {
+            padding: 0 8px !important;
+        }
+    }
+
+    /* 空间组件优化 */
+    :deep(.n-space) {
+        gap: 8px !important;
+
+        &.n-space--vertical {
+            gap: 12px !important;
+        }
+    }
+}
+
+/* 超小屏幕优化 */
+@media (max-width: 480px) {
+    .page-container {
+        padding: 8px;
+    }
+
+    :deep(.n-button) {
+        min-height: 36px !important;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+
+        /* 小屏幕按钮间距优化 */
+        &:not(:last-child) {
+            margin-bottom: 4px;
+        }
+
+        /* 图标按钮优化 */
+        .n-button__icon {
+            margin-right: 4px !important;
+        }
+    }
+
+    :deep(.n-input) {
+        min-height: 32px !important;
+        font-size: 14px !important;
+    }
+
+    :deep(.n-modal) {
+        .n-card {
+            margin: 8px !important;
+        }
+
+        .n-card__content {
+            padding: 12px !important;
+        }
+    }
+
+    /* 网格间距进一步减小 */
+    :deep(.n-grid) {
+        margin: 0 -6px !important;
+
+        .n-grid-item {
+            padding: 0 6px !important;
+        }
+    }
+
+    /* 卡片内边距优化 */
+    :deep(.n-card) {
+        .n-card__content {
+            padding: 12px !important;
+        }
     }
 }
 

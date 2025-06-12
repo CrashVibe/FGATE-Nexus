@@ -3,7 +3,11 @@
         <n-space vertical size="large">
             <!-- 基本信息 -->
             <n-card title="基本信息" size="small">
-                <n-form :model="generalConfig" label-placement="left" label-width="120px">
+                <n-form
+                    :model="generalConfig"
+                    :label-placement="isMobile ? 'top' : 'left'"
+                    :label-width="isMobile ? undefined : '120px'"
+                >
                     <n-form-item label="服务器名称">
                         <n-input v-model:value="generalConfig.name" placeholder="输入服务器名称" />
                     </n-form-item>
@@ -37,8 +41,10 @@
             </n-card>
 
             <!-- 保存按钮 -->
-            <n-space justify="end">
-                <n-button type="primary" :loading="saving" @click="saveGeneralConfig"> 保存基本配置 </n-button>
+            <n-space :justify="isMobile ? 'center' : 'end'">
+                <n-button type="primary" :loading="saving" :block="isMobile" @click="saveGeneralConfig">
+                    保存基本配置
+                </n-button>
             </n-space>
         </n-space>
     </div>
@@ -48,7 +54,18 @@
 import { ref, onMounted } from 'vue';
 import { useMessage } from 'naive-ui';
 import { useRequest } from 'alova/client';
+import { useBreakpoint, useMemo } from 'vooks';
 import type { ServerWithStatus } from '~/server/shared/types/server/api';
+
+// 响应式断点检测
+function useIsMobile() {
+    const breakpointRef = useBreakpoint();
+    return useMemo(() => {
+        return breakpointRef.value === 'xs' || breakpointRef.value === 's';
+    });
+}
+
+const isMobile = useIsMobile();
 
 const props = defineProps<{
     serverId: number;
@@ -116,6 +133,59 @@ onMounted(() => {
 .general-config {
     .n-card {
         margin-bottom: 16px;
+    }
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+    .general-config {
+        .n-card {
+            margin-bottom: 12px;
+
+            :deep(.n-card__content) {
+                padding: 12px;
+            }
+
+            .n-form-item {
+                margin-bottom: 16px;
+
+                :deep(.n-form-item__label) {
+                    font-size: 14px;
+                    margin-bottom: 8px;
+                }
+
+                :deep(.n-form-item__feedback) {
+                    font-size: 12px;
+                    line-height: 1.4;
+                }
+            }
+        }
+
+        .n-space {
+            gap: 12px;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .general-config {
+        .n-card {
+            :deep(.n-card__content) {
+                padding: 8px;
+            }
+
+            .n-form-item {
+                margin-bottom: 12px;
+
+                :deep(.n-form-item__label) {
+                    font-size: 13px;
+                }
+
+                :deep(.n-form-item__feedback) {
+                    font-size: 11px;
+                }
+            }
+        }
     }
 }
 </style>

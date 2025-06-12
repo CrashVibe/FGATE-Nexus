@@ -27,17 +27,21 @@
             <n-card title="服务器管理" size="small">
                 <n-alert type="info" title="提示" style="margin-bottom: 16px"> 这些操作将影响服务器连接和数据 </n-alert>
 
-                <n-space vertical size="medium">
+                <n-space :vertical="isMobile" size="medium">
                     <n-form-item label="连接管理">
-                        <n-space align="center">
-                            <n-button type="warning" :loading="operating" @click="forceDisconnect"> 断开连接 </n-button>
+                        <n-space :vertical="isMobile" :align="isMobile ? 'stretch' : 'center'">
+                            <n-button type="warning" :loading="operating" :block="isMobile" @click="forceDisconnect">
+                                断开连接
+                            </n-button>
                             <n-text depth="3">断开与服务器的连接</n-text>
                         </n-space>
                     </n-form-item>
 
                     <n-form-item label="服务器删除">
-                        <n-space align="center">
-                            <n-button type="error" :loading="operating" @click="deleteServer"> 删除服务器 </n-button>
+                        <n-space :vertical="isMobile" :align="isMobile ? 'stretch' : 'center'">
+                            <n-button type="error" :loading="operating" :block="isMobile" @click="deleteServer">
+                                删除服务器
+                            </n-button>
                             <n-text depth="3">永久删除服务器及其所有数据</n-text>
                         </n-space>
                     </n-form-item>
@@ -52,7 +56,18 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useMessage, useDialog } from 'naive-ui';
 import { useRouter } from 'vue-router';
 import { useRequest } from 'alova/client';
+import { useBreakpoint, useMemo } from 'vooks';
 import type { ServerWithStatus } from '~/server/shared/types/server/api';
+
+// 响应式断点检测
+function useIsMobile() {
+    const breakpointRef = useBreakpoint();
+    return useMemo(() => {
+        return breakpointRef.value === 'xs' || breakpointRef.value === 's';
+    });
+}
+
+const isMobile = useIsMobile();
 
 const props = defineProps<{
     serverId: number;
@@ -177,6 +192,57 @@ onBeforeUnmount(() => {
 .advanced-config {
     .n-card {
         margin-bottom: 16px;
+    }
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+    .advanced-config {
+        .n-card {
+            margin-bottom: 12px;
+
+            :deep(.n-card__content) {
+                padding: 12px;
+            }
+
+            .n-form-item {
+                :deep(.n-form-item__label) {
+                    font-size: 14px;
+                    margin-bottom: 8px;
+                }
+            }
+
+            .n-alert {
+                margin-bottom: 12px;
+
+                :deep(.n-alert__content) {
+                    font-size: 13px;
+                    line-height: 1.4;
+                }
+            }
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .advanced-config {
+        .n-card {
+            :deep(.n-card__content) {
+                padding: 8px;
+            }
+
+            .n-form-item {
+                :deep(.n-form-item__label) {
+                    font-size: 13px;
+                }
+            }
+
+            .n-alert {
+                :deep(.n-alert__content) {
+                    font-size: 12px;
+                }
+            }
+        }
     }
 }
 </style>

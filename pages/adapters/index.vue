@@ -7,7 +7,17 @@ import type { AdapterFormData, AdapterPayload } from '../../utils/adapters/forms
 import { onebotRules } from '../../utils/adapters/rules';
 import Common from '~/components/Card/Adapter/Common.vue';
 import { useRequest } from 'alova/client';
+import { useBreakpoint, useMemo } from 'vooks';
 
+// 响应式断点检测
+function useIsMobile() {
+    const breakpointRef = useBreakpoint();
+    return useMemo(() => {
+        return breakpointRef.value === 'xs' || breakpointRef.value === 's';
+    });
+}
+
+const isMobile = useIsMobile();
 const { adapterApi } = useApi();
 
 const showModal = ref(false);
@@ -189,39 +199,82 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
         <transition name="content-transition" appear>
             <div class="server-list">
                 <div class="head">
-                    <div class="head-text">
-                        <n-text strong>
-                            <h1>适配器列表</h1>
-                            <p>管理多个适配器，点击进入详细配置。</p>
-                            <p v-if="lastUpdateTime" class="last-update">最后更新: {{ lastUpdateTime }}</p>
-                        </n-text>
-                        <n-space>
-                            <n-button size="medium" :loading="refreshing" @click="handleRefresh">
-                                <n-icon><RefreshOutline /></n-icon>
-                                刷新
-                            </n-button>
-                            <n-button ghost size="medium" type="primary" @click="showModal = true">
-                                <n-icon><AddCircleOutline /></n-icon>
-                                添加适配器
-                            </n-button>
-                        </n-space>
+                    <div class="head-text" :class="{ 'mobile-layout': isMobile }">
+                        <div class="title-section">
+                            <n-text strong>
+                                <h1>适配器列表</h1>
+                                <p>管理多个适配器，点击进入详细配置。</p>
+                                <p v-if="lastUpdateTime" class="last-update">最后更新: {{ lastUpdateTime }}</p>
+                            </n-text>
+                        </div>
+                        <div class="action-section">
+                            <n-space
+                                :vertical="isMobile"
+                                :size="isMobile ? 'small' : 'medium'"
+                                :wrap="!isMobile"
+                                :justify="isMobile ? 'center' : 'end'"
+                            >
+                                <n-button
+                                    noborder
+                                    :size="isMobile ? 'medium' : 'medium'"
+                                    :loading="refreshing"
+                                    :block="isMobile"
+                                    @click="handleRefresh"
+                                >
+                                    <template #icon>
+                                        <n-icon><RefreshOutline /></n-icon>
+                                    </template>
+                                    刷新列表
+                                </n-button>
+                                <n-button
+                                    type="primary"
+                                    :size="isMobile ? 'medium' : 'medium'"
+                                    :block="isMobile"
+                                    @click="showModal = true"
+                                >
+                                    <template #icon>
+                                        <n-icon><AddCircleOutline /></n-icon>
+                                    </template>
+                                    添加适配器
+                                </n-button>
+                            </n-space>
+                        </div>
                     </div>
                 </div>
 
                 <n-empty v-if="!adapters.length" description="您还没有任何适配器">
                     <template #extra>
-                        <n-button size="small" @click="showModal = true">创建新适配器</n-button>
+                        <n-button
+                            type="primary"
+                            :size="isMobile ? 'medium' : 'small'"
+                            :block="isMobile"
+                            @click="showModal = true"
+                        >
+                            <template #icon>
+                                <n-icon><AddCircleOutline /></n-icon>
+                            </template>
+                            创建新适配器
+                        </n-button>
                     </template>
                 </n-empty>
 
-                <n-modal v-model:show="showModal" title="新建适配器" preset="dialog" :show-icon="false">
+                <n-modal
+                    v-model:show="showModal"
+                    title="新建适配器"
+                    preset="dialog"
+                    :show-icon="false"
+                    :style="{
+                        width: isMobile ? '90vw' : '600px',
+                        maxWidth: isMobile ? '90vw' : '600px'
+                    }"
+                >
                     <n-divider />
                     <n-form
                         ref="formRef"
                         :model="formData"
                         :rules="currentRules"
-                        label-placement="left"
-                        label-width="90px"
+                        :label-placement="isMobile ? 'top' : 'left'"
+                        :label-width="isMobile ? undefined : '90px'"
                     >
                         <n-form-item label="选择适配器" :show-feedback="false">
                             <n-select
@@ -271,20 +324,28 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
                     </n-form>
 
                     <template #action>
-                        <n-space justify="end">
-                            <n-button @click="handleClose">取消</n-button>
+                        <n-space
+                            :justify="isMobile ? 'space-between' : 'end'"
+                            :vertical="isMobile"
+                            :size="isMobile ? 'small' : 'medium'"
+                        >
+                            <n-button :size="isMobile ? 'medium' : 'large'" :block="isMobile" @click="handleClose">
+                                取消
+                            </n-button>
                             <n-button
                                 type="primary"
                                 :loading="submitting"
                                 :disabled="submitting || !formData.adapter_type"
+                                :size="isMobile ? 'medium' : 'large'"
+                                :block="isMobile"
                                 @click="handleSubmit"
                             >
-                                提交
+                                {{ submitting ? '创建中...' : '创建适配器' }}
                             </n-button>
                         </n-space>
                     </template>
                 </n-modal>
-                <n-grid cols="1 600:2 1000:3" x-gap="16" y-gap="16" :item-responsive="true">
+                <n-grid :cols="isMobile ? 1 : '600:2 1100:3'" x-gap="16" y-gap="16" :item-responsive="true">
                     <n-gi v-for="(adapter, index) in adapters" :key="adapter.id">
                         <transition
                             name="card-appear"
@@ -313,25 +374,72 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
 .server-list {
     .head {
         margin-bottom: 24px;
+
         .head-text {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 16px;
+
+            &.mobile-layout {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+
+                .title-section {
+                    text-align: center;
+                }
+
+                .action-section {
+                    width: 100%;
+
+                    :deep(.n-space) {
+                        width: 100%;
+
+                        &.n-space--vertical {
+                            .n-space-item {
+                                width: 100%;
+
+                                .n-button {
+                                    width: 100%;
+                                    justify-content: center;
+                                }
+                            }
+                        }
+
+                        &:not(.n-space--vertical) {
+                            justify-content: center;
+
+                            .n-space-item {
+                                flex: 1;
+
+                                .n-button {
+                                    width: 100%;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             h1 {
                 margin: 0;
             }
         }
+
         p {
             margin: 0;
             color: #666;
             font-size: 14px;
         }
+
         .last-update {
             font-size: 12px;
             color: #999;
             margin-top: 4px;
         }
     }
+
     .adapter-modal {
         .n-form-item {
             margin-bottom: 18px;
@@ -339,6 +447,65 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
                 flex: 1;
             }
         }
+    }
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+    .server-list {
+        .head {
+            margin-bottom: 16px;
+
+            .head-text {
+                h1 {
+                    font-size: 20px;
+                }
+
+                p {
+                    font-size: 13px;
+                }
+
+                .last-update {
+                    font-size: 11px;
+                }
+            }
+        }
+    }
+
+    /* 模态框内容优化 */
+    :deep(.n-modal) {
+        .n-card {
+            margin: 16px;
+
+            .n-form {
+                .n-form-item {
+                    margin-bottom: 16px;
+                }
+            }
+        }
+    }
+}
+
+/* 超小屏幕优化 */
+@media (max-width: 480px) {
+    .server-list {
+        .head {
+            .head-text {
+                .action-section {
+                    :deep(.n-space-item) {
+                        .n-button {
+                            min-height: 36px;
+                            font-size: 13px;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /* 网格间距优化 */
+    :deep(.n-grid) {
+        --n-gap: 12px;
     }
 }
 </style>

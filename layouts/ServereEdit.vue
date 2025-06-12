@@ -4,19 +4,23 @@
         <n-layout-header bordered>
             <n-space justify="space-between" align="center" style="height: 100%">
                 <n-text strong>服务器管理系统</n-text>
-                <n-popover v-if="isMobile" trigger="click" placement="bottom-end">
-                    <template #trigger>
+                <!-- 手机端菜单按钮 -->
+                <n-button v-if="isMobile" quaternary class="mobile-menu-button" @click="showMobileMenu = true">
+                    <template #icon>
                         <n-icon :component="MenuOutline" />
                     </template>
-                    <n-menu
-                        :key="selectedKey"
-                        :options="menuOptions"
-                        :value="selectedKey"
-                        @update:value="handleMenuSelect"
-                    />
-                </n-popover>
+                    菜单
+                </n-button>
             </n-space>
         </n-layout-header>
+
+        <!-- 移动端抽屉菜单 -->
+        <n-drawer v-model:show="showMobileMenu" :width="280" placement="left">
+            <n-drawer-content title="导航菜单" closable>
+                <n-menu :options="menuOptions" :value="selectedKey" @update:value="handleMobileMenuSelect" />
+            </n-drawer-content>
+        </n-drawer>
+
         <n-layout has-sider bordered class="sec_layout">
             <!-- 侧边栏 -->
             <n-layout-sider
@@ -49,15 +53,21 @@ import { useBreakpoint, useMemo } from 'vooks';
 import { MenuOutline, SettingsOutline, ServerOutline, BuildOutline } from '@vicons/ionicons5';
 import { useRouter, useRoute, type RouteLocationAsPathGeneric } from 'vue-router';
 import { NIcon } from 'naive-ui';
-import { provide } from 'vue';
+import { provide, ref } from 'vue';
+
 function useIsMobile() {
     const breakpointRef = useBreakpoint();
     return useMemo(() => {
         return breakpointRef.value === 'xs';
     });
 }
+
 const router = useRouter();
 const route = useRoute();
+
+// 移动端菜单状态
+const showMobileMenu = ref(false);
+
 function renderIcon(icon: Component) {
     return () => h(NIcon, null, { default: () => h(icon) });
 }
@@ -116,13 +126,11 @@ const selectedKey = computed(() => {
 });
 
 const handleMenuSelect = (key: RouteLocationAsPathGeneric) => {
-    console.log('Menu selected:', key, 'Current route:', route.path); // 调试日志
+    console.log('Menu selected:', key, 'Current route:', route.path);
 
-    // 确保key是字符串类型
     const targetPath = String(key);
     console.log('Navigating to:', targetPath);
 
-    // 如果是当前页面，不执行导航
     if (targetPath === route.path) {
         console.log('Same route, skipping navigation');
         return;
@@ -132,46 +140,23 @@ const handleMenuSelect = (key: RouteLocationAsPathGeneric) => {
         console.error('Navigation error:', err);
     });
 };
+
+// 移动端菜单选择处理
+const handleMobileMenuSelect = (key: RouteLocationAsPathGeneric) => {
+    // 关闭移动端菜单
+    showMobileMenu.value = false;
+    // 执行导航
+    handleMenuSelect(key);
+};
+
 const isMobile = useIsMobile();
 const showSider = useMemo(() => {
-    return !isMobile.value && !isMobile.value;
+    return !isMobile.value;
 });
+
 provide('menuOptions', menuOptions);
 </script>
 
 <style lang="less" scoped>
-.layout {
-    .n-layout-header {
-        padding: 20px;
-        height: 64px;
-    }
-    .n-layout {
-        width: 100%;
-        height: calc(100vh - 64px);
-    }
-}
-
-.content-wrapper {
-    padding: 20px;
-    min-height: 100%;
-    transition: all 0.3s ease;
-}
-
-:deep(.nuxt-page) {
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    transform-origin: center center;
-}
-
-.content-wrapper > * {
-    transition:
-        transform 0.3s ease,
-        opacity 0.3s ease;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-    .content-wrapper {
-        padding: 15px;
-    }
-}
+@import '/assets/css/layouts.less';
 </style>
