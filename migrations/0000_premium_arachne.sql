@@ -26,6 +26,27 @@ CREATE TABLE `players` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `player_uuid_idx` ON `players` (`uuid`);--> statement-breakpoint
+CREATE TABLE `server_binding_configs` (
+	`server_id` integer PRIMARY KEY NOT NULL,
+	`max_bind_count` integer NOT NULL,
+	`code_length` integer NOT NULL,
+	`code_mode` text NOT NULL,
+	`code_expire` integer NOT NULL,
+	`allow_unbind` integer NOT NULL,
+	`prefix` text NOT NULL,
+	`force_bind` integer NOT NULL,
+	`kick_msg` text NOT NULL,
+	`trust_kick_msg` text NOT NULL,
+	`unbind_kick_msg` text NOT NULL,
+	`bind_success_msg` text NOT NULL,
+	`bind_fail_msg` text NOT NULL,
+	`unbind_success_msg` text NOT NULL,
+	`unbind_fail_msg` text NOT NULL,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	FOREIGN KEY (`server_id`) REFERENCES `servers`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
 CREATE TABLE `servers` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,

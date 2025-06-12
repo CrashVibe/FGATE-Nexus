@@ -9,12 +9,6 @@
         <n-tab-pane name="basic" tab="基础设置">
           <div class="form-grid">
             <n-form :model="form" label-placement="top" class="form-section">
-              <div class="form-row">
-                <n-form-item label="绑定模式" class="form-item-full">
-                  <n-select v-model:value="form.bindMode" :options="bindModeOptions" placeholder="请选择绑定模式" />
-                </n-form-item>
-              </div>
-
               <n-grid :cols="isMobile ? 1 : '1 s:2 m:3 l:3'" responsive="screen" :x-gap="16" :y-gap="16">
                 <n-gi>
                   <n-form-item>
@@ -297,23 +291,6 @@
                     <n-tooltip trigger="hover">
                       <template #trigger>
                         <span class="label-with-tooltip">
-                          信任模式踢出消息
-                          <n-icon size="14" class="help-icon">
-                            <HelpCircleOutline />
-                          </n-icon>
-                        </span>
-                      </template>
-                      信任模式下玩家未绑定时的踢出消息（无需验证码）
-                    </n-tooltip>
-                  </template>
-                  <n-input v-model:value="form.trustKickMsg" type="textarea" :rows="4" />
-                </n-form-item>
-
-                <n-form-item>
-                  <template #label>
-                    <n-tooltip trigger="hover">
-                      <template #trigger>
-                        <span class="label-with-tooltip">
                           解绑踢出消息
                           <n-icon size="14" class="help-icon">
                             <HelpCircleOutline />
@@ -382,6 +359,7 @@ import { useBreakpoint, useMemo } from 'vooks';
 import ServerPageWrapper from '~/components/Layout/ServerPageWrapper.vue';
 import ServerPageHeader from '~/components/Layout/ServerPageHeader.vue';
 import { useServerData } from '~/composables/useServerData';
+import { useBindingConfig } from '~/composables/useBindingConfig';
 
 // 响应式断点检测
 function useIsMobile() {
@@ -400,10 +378,10 @@ definePageMeta({
   layout: 'servere-edit'
 });
 
-const { serverName } = useServerData();
+const { serverId, serverName } = useServerData();
+const { config, fetchConfig, saveConfig } = useBindingConfig(serverId.value);
 
 const form = ref({
-  bindMode: '',
   maxBindCount: 4,
   codeLength: 6,
   codeMode: 'mix',
@@ -417,15 +395,11 @@ const form = ref({
   bindSuccessMsg: '绑定#user成功! 你可以进入服务器了!',
   bindFailMsg: '绑定#user失败! #why',
   unbindSuccessMsg: '解除绑定#user成功!',
-  unbindFailMsg: '解除绑定#user失败! #why'
+  unbindFailMsg: '解除fdsafasfy'
 });
 
 const activeTab = ref('basic');
 
-const bindModeOptions = [
-  { label: '验证码', value: 'code' },
-  { label: '信任模式', value: 'trust' }
-];
 const codeModeOptions = [
   { label: '大小写单词和数字', value: 'mix' },
   { label: '纯数字', value: 'number' },
@@ -436,18 +410,27 @@ const codeModeOptions = [
 const previewedCode = ref('');
 
 // 初始化时生成一个示例验证码
-onMounted(() => {
+onMounted(async () => {
+  await fetchConfig();
+  fillFormFromConfig(config.value);
   previewCode();
 });
+
+// 用于初始化和同步表单
+function fillFormFromConfig(cfg: Record<string, unknown> | null) {
+  if (!cfg) return;
+  Object.keys(form.value).forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(cfg, key) && cfg[key] !== undefined) {
+      // @ts-expect-error: 动态表单字段赋值，后端返回字段类型不完全匹配前端定义
+      form.value[key] = cfg[key];
+    }
+  });
+}
 
 // 动态生成指令示例
 const bindCommandExample = computed(() => {
   const prefix = form.value.prefix || '';
-  if (form.value.bindMode === 'trust') {
-    return `${prefix}绑定 PlayerName`;
-  } else {
-    return `${prefix}绑定 ${previewedCode.value || 'ABC123'}`;
-  }
+  return `${prefix}绑定 ${previewedCode.value || 'ABC123'}`;
 });
 
 const unbindCommandExample = computed(() => {
@@ -508,10 +491,9 @@ async function copyToClipboard(text: string) {
 }
 
 // 保存绑定配置
-function saveBinding() {
+async function saveBinding() {
   try {
-    // TODO: 实现保存逻辑
-    console.log('保存绑定配置:', form.value);
+    await saveConfig({ ...form.value });
     message.success('配置保存成功');
   } catch {
     message.error('配置保存失败');
