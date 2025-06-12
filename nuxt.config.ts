@@ -30,6 +30,10 @@ export default defineNuxtConfig({
             }
         },
         build: {
+            rollupOptions: {
+                external: ['bun:sqlite'],
+
+            },
             target: 'esnext',
             minify: 'terser',
             terserOptions: {

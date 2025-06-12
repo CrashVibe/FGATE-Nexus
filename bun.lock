@@ -26,6 +26,7 @@
         "@types/bun": "latest",
         "@types/ws": "^8.18.1",
         "@vercel/ncc": "^0.38.3",
+        "bun-types": "^1.2.15",
         "drizzle-kit": "^0.31.1",
         "eslint": "^9.28.0",
         "less": "^4.3.0",
