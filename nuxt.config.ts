@@ -6,6 +6,10 @@ export default defineNuxtConfig({
     compatibilityDate: 'latest',
     devtools: { enabled: true },
     ssr: false,
+
+    // 全局样式配置
+    css: ['~/assets/css/index.less', '~/assets/css/server-pages.less'],
+
     runtimeConfig: {
         public: {
             commitHash: process.env.NUXT_PUBLIC_COMMIT_HASH || undefined
@@ -31,8 +35,7 @@ export default defineNuxtConfig({
         },
         build: {
             rollupOptions: {
-                external: ['bun:sqlite'],
-
+                external: ['bun:sqlite']
             },
             target: 'esnext',
             minify: 'terser',

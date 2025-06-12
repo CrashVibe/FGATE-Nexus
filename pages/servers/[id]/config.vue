@@ -1,58 +1,34 @@
 <template>
-    <div class="page-container">
-        <transition name="content-transition" appear>
-            <div class="server-config">
-                <n-space vertical size="large">
-                    <!-- 页面标题 -->
-                    <div class="header">
-                        <n-space justify="space-between" align="center">
-                            <div>
-                                <n-text tag="h1" style="font-size: 24px; margin: 0">服务器配置</n-text>
-                                <n-text depth="3">{{ serverData?.data?.name }}</n-text>
-                            </div>
-                            <n-button quaternary @click="goBack">
-                                <template #icon>
-                                    <n-icon :component="ArrowBackOutline" />
-                                </template>
-                                返回
-                            </n-button>
-                        </n-space>
-                    </div>
+    <ServerPageWrapper>
+        <!-- 页面标题 -->
+        <ServerPageHeader title="服务器配置" :server-name="serverName" back-button-text="返回" />
 
-                    <!-- 简介卡片 -->
-                    <n-card v-if="desc" size="small" class="desc-card">
-                        <n-text depth="3">{{ desc }}</n-text>
-                    </n-card>
+        <!-- 简介卡片 -->
+        <n-card v-if="desc" size="small" class="desc-card">
+            <n-text depth="3">{{ desc }}</n-text>
+        </n-card>
 
-                    <!-- 配置选项卡片 -->
-                    <n-grid :cols="'1 800:2'" :x-gap="20" :y-gap="20" responsive="screen">
-                        <n-grid-item v-for="menuItem in configMenuItems" :key="menuItem.key" :span="1">
-                            <n-card
-                                :title="menuItem.label"
-                                hoverable
-                                style="cursor: pointer"
-                                @click="navigateToMenuItem(menuItem.key)"
-                            >
-                                <template #header-extra>
-                                    <n-icon :component="getIconForMenuItem(menuItem.key)" size="20" />
-                                </template>
-                                <n-text depth="3">{{ menuItem.desc }}</n-text>
-                            </n-card>
-                        </n-grid-item>
-                    </n-grid>
-                </n-space>
-            </div>
-        </transition>
-    </div>
+        <!-- 配置选项卡片 -->
+        <n-grid cols="1 600:2 900:3" x-gap="20" y-gap="20" :item-responsive="true">
+            <n-gi v-for="menuItem in configMenuItems" :key="menuItem.key" :span="getCardSpan(menuItem.label)">
+                <n-card :title="menuItem.label" hoverable class="config-card" @click="navigateToMenuItem(menuItem.key)">
+                    <template #header-extra>
+                        <n-icon :component="getIconForMenuItem(menuItem.key)" size="20" />
+                    </template>
+                    <n-text depth="3">{{ menuItem.desc }}</n-text>
+                </n-card>
+            </n-gi>
+        </n-grid>
+    </ServerPageWrapper>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, inject } from 'vue';
+import { computed, inject, h } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ArrowBackOutline, ServerOutline, BuildOutline, SettingsOutline } from '@vicons/ionicons5';
-import { useRequest } from 'alova/client';
-import { useMessage } from 'naive-ui';
-import type { ApiResponse, ServerWithStatus } from '~/server/shared/types/server/api';
+import { SettingsOutline } from '@vicons/ionicons5';
+import ServerPageWrapper from '~/components/Layout/ServerPageWrapper.vue';
+import ServerPageHeader from '~/components/Layout/ServerPageHeader.vue';
+import { useServerData } from '~/composables/useServerData';
 
 definePageMeta({
     layout: 'servere-edit'
@@ -60,62 +36,79 @@ definePageMeta({
 
 const route = useRoute();
 const router = useRouter();
-const serverId = computed(() => Number(route.params.id));
-const { serverApi } = useApi();
-const serverData = ref<ApiResponse<ServerWithStatus> | null>(null);
-const loading = ref(true);
-const message = useMessage();
+const { serverName } = useServerData();
+
 const menuOptions = inject(
     'menuOptions',
     computed(() => [])
-) as unknown as import('vue').Ref<Array<{ label: string; key: string; desc?: string }>>;
+) as unknown as import('vue').Ref<
+    Array<{ label: string; key: string; desc?: string; icon?: () => import('vue').VNode }>
+>;
+
 const desc = computed(() => {
     const found = menuOptions.value.find((item) => item.key === route.path);
     return found?.desc || '';
 });
 
-// 过滤出配置相关的菜单项（排除"返回服务器管理"）
+// 过滤出配置相关的菜单项
 const configMenuItems = computed(() => {
     return menuOptions.value.filter((item) => item.key !== '/' && item.key.includes('/servers/'));
 });
-
-useRequest(serverApi.getServer(serverId.value))
-    .onSuccess(({ data }) => {
-        serverData.value = data;
-    })
-    .onError((event) => {
-        // @ts-expect-error alova event.data 结构类型推断不全
-        message.error(event.data?.message || '获取服务器信息失败');
-    })
-    .onComplete(() => {
-        loading.value = false;
-    });
-
-const goBack = () => {
-    router.push('/');
-};
 
 const navigateToMenuItem = (key: string) => {
     router.push(key);
 };
 
 const getIconForMenuItem = (key: string) => {
-    if (key.includes('/config')) return SettingsOutline;
-    if (key.includes('/general')) return ServerOutline;
-    if (key.includes('/advanced')) return BuildOutline;
-    if (key.includes('/binding')) return SettingsOutline;
-    return SettingsOutline;
+    const menuItem = menuOptions.value.find((item) => item.key === key);
+    // 如果找到了菜单项且有 icon，返回 icon 函数，否则返回默认图标
+    return menuItem?.icon || (() => h('n-icon', null, { default: () => h(SettingsOutline) }));
+};
+
+// 根据标题长度决定卡片占用的列数（span值）
+const getCardSpan = (title: string) => {
+    // 长标题（超过4个字符）在大屏幕上占2列，短标题占1列
+    // 在窄屏幕上所有卡片都占1列（由responsive breakpoints控制）
+    return title.length > 4 ? 2 : 1;
 };
 </script>
 
 <style scoped lang="less">
-.server-config {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+.config-card {
+    height: 100%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    :deep(.n-card__header) {
+        .n-card__header__main {
+            font-weight: 500;
+            font-size: 16px;
+        }
+    }
+
+    :deep(.n-card__content) {
+        padding-top: 8px;
+    }
 }
 
-.header {
-    margin-bottom: 24px;
+// 简介卡片样式
+.desc-card {
+    margin-bottom: 20px;
+}
+
+// 响应式调整
+@media (max-width: 480px) {
+    .config-card {
+        :deep(.n-card__header) {
+            .n-card__header__main {
+                font-size: 15px;
+            }
+        }
+    }
 }
 </style>
