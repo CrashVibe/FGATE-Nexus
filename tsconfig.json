@@ -1,13 +1,11 @@
 {
-    "extends": "./.nuxt/tsconfig.json",
-    "compilerOptions": {
-        "types": [
-            "bun-types"
-        ],
-        "module": "ESNext",
-        "target": "ES2020",
-        "moduleResolution": "Bundler",
-        "verbatimModuleSyntax": true,
-        "strict": true
-    }
+  "extends": "./.nuxt/tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun-types"],
+    "module": "ESNext",
+    "target": "ES2020",
+    "moduleResolution": "Bundler",
+    "verbatimModuleSyntax": true,
+    "strict": true
+  }
 }

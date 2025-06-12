@@ -155,26 +155,26 @@ bun run db:migrate
 
 1. **克隆项目**
 
-    ```bash
-    git clone <repository-url>
-    cd FGATE-Nexus
-    ```
+   ```bash
+   git clone <repository-url>
+   cd FGATE-Nexus
+   ```
 
 2. **安装依赖**
 
-    ```bash
-    bun install
-    ```
+   ```bash
+   bun install
+   ```
 
 3. **启动开发服务器**
 
-    ```bash
-    bun --bun dev
-    ```
+   ```bash
+   bun --bun dev
+   ```
 
 4. **访问应用**
 
-    打开浏览器访问 `http://localhost:3000`
+   打开浏览器访问 `http://localhost:3000`
 
 ## 📖 相关链接
 

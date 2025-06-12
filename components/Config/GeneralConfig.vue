@@ -1,53 +1,71 @@
 <template>
-    <div class="general-config">
-        <n-space vertical size="large">
-            <!-- 基本信息 -->
-            <n-card title="基本信息" size="small">
-                <n-form
-                    :model="generalConfig"
-                    :label-placement="isMobile ? 'top' : 'left'"
-                    :label-width="isMobile ? undefined : '120px'"
-                >
-                    <n-form-item label="服务器名称">
-                        <n-input v-model:value="generalConfig.name" placeholder="输入服务器名称" />
-                    </n-form-item>
-                    <n-form-item label="服务器Token">
-                        <n-input v-model:value="generalConfig.token" placeholder="服务器访问令牌" readonly />
-                        <template #feedback> Token用于服务器认证，不可修改 </template>
-                    </n-form-item>
-                </n-form>
-            </n-card>
+  <div class="general-config">
+    <n-space vertical size="large">
+      <!-- 基本信息 -->
+      <n-card title="基本信息" size="small">
+        <n-form
+          :model="generalConfig"
+          :label-placement="isMobile ? 'top' : 'left'"
+          :label-width="isMobile ? undefined : '120px'"
+        >
+          <n-form-item label="服务器名称">
+            <n-input v-model:value="generalConfig.name" placeholder="输入服务器名称" />
+          </n-form-item>
+          <n-form-item label="服务器Token">
+            <n-input v-model:value="generalConfig.token" placeholder="服务器访问令牌" readonly />
+            <template #feedback> Token用于服务器认证，不可修改 </template>
+          </n-form-item>
+        </n-form>
+      </n-card>
 
-            <!-- 服务器状态 -->
-            <n-card title="服务器状态" size="small">
-                <n-space vertical size="medium">
-                    <n-space align="center">
-                        <n-text>当前状态：</n-text>
-                        <n-tag :type="serverStatus?.isOnline ? 'success' : 'error'" size="small">
-                            {{ serverStatus?.isOnline ? '在线' : '离线' }}
-                        </n-tag>
-                    </n-space>
+      <!-- 服务器状态 -->
+      <n-card title="服务器状态" size="small">
+        <n-space vertical size="medium">
+          <n-space align="center">
+            <n-text>当前状态：</n-text>
+            <n-tag :type="serverStatus?.isOnline ? 'success' : 'error'" size="small">
+              {{ serverStatus?.isOnline ? '在线' : '离线' }}
+            </n-tag>
+          </n-space>
 
-                    <n-space v-if="serverStatus?.software" align="center">
-                        <n-text>服务端：</n-text>
-                        <n-text>{{ serverStatus.software }}</n-text>
-                    </n-space>
+          <n-space v-if="serverStatus?.software" align="center">
+            <n-text>服务端：</n-text>
+            <n-text>{{ serverStatus.software }}</n-text>
+          </n-space>
 
-                    <n-space v-if="serverStatus?.version" align="center">
-                        <n-text>版本：</n-text>
-                        <n-text>{{ serverStatus.version }}</n-text>
-                    </n-space>
-                </n-space>
-            </n-card>
-
-            <!-- 保存按钮 -->
-            <n-space :justify="isMobile ? 'center' : 'end'">
-                <n-button type="primary" :loading="saving" :block="isMobile" @click="saveGeneralConfig">
-                    保存基本配置
-                </n-button>
-            </n-space>
+          <n-space v-if="serverStatus?.version" align="center">
+            <n-text>版本：</n-text>
+            <n-text>{{ serverStatus.version }}</n-text>
+          </n-space>
         </n-space>
-    </div>
+      </n-card>
+
+      <!-- 新增：适配器选择 -->
+      <n-card title="适配器绑定" size="small">
+        <n-form
+          :model="generalConfig"
+          :label-placement="isMobile ? 'top' : 'left'"
+          :label-width="isMobile ? undefined : '120px'"
+        >
+          <n-form-item label="适配器">
+            <n-select
+              v-model:value="generalConfig.adapter_id"
+              :options="adapterOptions"
+              placeholder="请选择要绑定的适配器"
+              clearable
+            />
+          </n-form-item>
+        </n-form>
+      </n-card>
+
+      <!-- 保存按钮 -->
+      <n-space :justify="isMobile ? 'center' : 'end'">
+        <n-button type="primary" :loading="saving" :block="isMobile" @click="saveGeneralConfig">
+          保存基本配置
+        </n-button>
+      </n-space>
+    </n-space>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -59,133 +77,152 @@ import type { ServerWithStatus } from '~/server/shared/types/server/api';
 
 // 响应式断点检测
 function useIsMobile() {
-    const breakpointRef = useBreakpoint();
-    return useMemo(() => {
-        return breakpointRef.value === 'xs' || breakpointRef.value === 's';
-    });
+  const breakpointRef = useBreakpoint();
+  return useMemo(() => {
+    return breakpointRef.value === 'xs' || breakpointRef.value === 's';
+  });
 }
 
 const isMobile = useIsMobile();
 
 const props = defineProps<{
-    serverId: number;
+  serverId: number;
 }>();
 
 const message = useMessage();
-const { serverApi } = useApi();
+const { serverApi, adapterApi } = useApi();
 
 const generalConfig = ref({
-    name: '',
-    token: ''
+  name: '',
+  token: '',
+  adapter_id: null as number | null // 明确类型
 });
 
 const serverStatus = ref<ServerWithStatus | null>(null);
 const saving = ref(false);
 
+// 适配器选项
+const adapterOptions = ref<{ label: string; value: number }[]>([]);
+
+// 获取适配器列表
+const fetchAdapterOptions = () => {
+  useRequest(adapterApi.getAdapters()).onSuccess(({ data }) => {
+    if (data.success && data.data) {
+      adapterOptions.value = data.data.map((adapter) => ({
+        label: `OneBot ${adapter.botId}`,
+        value: adapter.id
+      }));
+    }
+  });
+};
+
 const fetchGeneralConfig = () => {
-    useRequest(serverApi.getServer(props.serverId))
-        .onSuccess(({ data }) => {
-            if (data.success && data.data) {
-                generalConfig.value = {
-                    name: data.data.name || '',
-                    token: data.data.token || ''
-                };
-                serverStatus.value = data.data;
-            } else {
-                message.error(data.message || '获取基本配置失败');
-            }
-        })
-        .onError((error) => {
-            message.error('获取基本配置失败');
-            console.error('获取基本配置失败:', error);
-        });
+  useRequest(serverApi.getServer(props.serverId))
+    .onSuccess(({ data }) => {
+      if (data.success && data.data) {
+        generalConfig.value = {
+          name: data.data.name || '',
+          token: data.data.token || '',
+          adapter_id: data.data.adapter_id ?? null
+        };
+        serverStatus.value = data.data;
+      } else {
+        message.error(data.message || '获取基本配置失败');
+      }
+    })
+    .onError((error) => {
+      message.error('获取基本配置失败');
+      console.error('获取基本配置失败:', error);
+    });
 };
 
 const saveGeneralConfig = () => {
-    saving.value = true;
-    useRequest(
-        serverApi.updateServer(props.serverId, {
-            name: generalConfig.value.name
-        })
-    )
-        .onSuccess(({ data }) => {
-            if (data.success) {
-                message.success('基本配置保存成功');
-            } else {
-                message.error(data.message || '保存基本配置失败');
-            }
-        })
-        .onError((error) => {
-            message.error('保存基本配置失败');
-            console.error('保存基本配置失败:', error);
-        })
-        .onComplete(() => {
-            saving.value = false;
-        });
+  saving.value = true;
+  useRequest(
+    serverApi.updateServer(props.serverId, {
+      name: generalConfig.value.name,
+      adapter_id: generalConfig.value.adapter_id
+    })
+  )
+    .onSuccess(({ data }) => {
+      if (data.success) {
+        message.success('基本配置保存成功');
+      } else {
+        message.error(data.message || '保存基本配置失败');
+      }
+    })
+    .onError((error) => {
+      message.error('保存基本配置失败');
+      console.error('保存基本配置失败:', error);
+    })
+    .onComplete(() => {
+      saving.value = false;
+    });
 };
 
 onMounted(() => {
-    fetchGeneralConfig();
+  fetchGeneralConfig();
+  fetchAdapterOptions();
 });
 </script>
 
 <style scoped lang="less">
 .general-config {
-    .n-card {
-        margin-bottom: 16px;
-    }
+  .n-card {
+    margin-bottom: 16px;
+  }
 }
 
 /* 移动端优化 */
 @media (max-width: 768px) {
-    .general-config {
-        .n-card {
-            margin-bottom: 12px;
+  .general-config {
+    .n-card {
+      margin-bottom: 12px;
 
-            :deep(.n-card__content) {
-                padding: 12px;
-            }
+      :deep(.n-card__content) {
+        padding: 12px;
+      }
 
-            .n-form-item {
-                margin-bottom: 16px;
+      .n-form-item {
+        margin-bottom: 16px;
 
-                :deep(.n-form-item__label) {
-                    font-size: 14px;
-                    margin-bottom: 8px;
-                }
-
-                :deep(.n-form-item__feedback) {
-                    font-size: 12px;
-                    line-height: 1.4;
-                }
-            }
+        :deep(.n-form-item__label) {
+          font-size: 14px;
+          margin-bottom: 8px;
         }
 
-        .n-space {
-            gap: 12px;
+        :deep(.n-form-item__feedback) {
+          font-size: 12px;
+          line-height: 1.4;
         }
+      }
     }
+
+    .n-space {
+      gap: 12px;
+    }
+  }
 }
 
 @media (max-width: 480px) {
-    .general-config {
-        .n-card {
-            :deep(.n-card__content) {
-                padding: 8px;
-            }
+  .general-config {
+    .n-card {
+      :deep(.n-card__content) {
+        padding: 8px;
+      }
 
-            .n-form-item {
-                margin-bottom: 12px;
+      .n-form-item {
+        margin-bottom: 12px;
 
-                :deep(.n-form-item__label) {
-                    font-size: 13px;
-                }
-
-                :deep(.n-form-item__feedback) {
-                    font-size: 11px;
-                }
-            }
+        :deep(.n-form-item__label) {
+          font-size: 13px;
         }
+
+        :deep(.n-form-item__feedback) {
+          font-size: 11px;
+        }
+      }
     }
+  }
 }
 </style>

@@ -5,9 +5,9 @@ import type { SocialAccount } from '../account/account';
 import type { Server } from './server';
 
 export interface ApiResponse<T> {
-    success: boolean;
-    message: string;
-    data?: T;
+  success: boolean;
+  message: string;
+  data?: T;
 }
 
 export type ServerWithStatus = Server & ServerStatus;

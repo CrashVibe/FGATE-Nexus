@@ -1,11 +1,11 @@
 <template>
-    <ServerPageWrapper>
-        <!-- 页面标题 -->
-        <ServerPageHeader title="基础设置" :server-name="serverName" />
+  <ServerPageWrapper>
+    <!-- 页面标题 -->
+    <ServerPageHeader title="基础设置" :server-name="serverName" />
 
-        <!-- 基础设置内容 -->
-        <GeneralConfig :server-id="serverId" />
-    </ServerPageWrapper>
+    <!-- 基础设置内容 -->
+    <GeneralConfig :server-id="serverId" />
+  </ServerPageWrapper>
 </template>
 
 <script setup lang="ts">
@@ -15,7 +15,7 @@ import ServerPageHeader from '~/components/Layout/ServerPageHeader.vue';
 import { useServerData } from '~/composables/useServerData';
 
 definePageMeta({
-    layout: 'servere-edit'
+  layout: 'servere-edit'
 });
 
 const { serverId, serverName } = useServerData();

@@ -1,39 +1,9 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "750fdd7c-23b6-4e35-8035-a072f1f8f1c7",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "6e454414-9f90-445f-ba44-5713d108cb7b",
+  "prevId": "750fdd7c-23b6-4e35-8035-a072f1f8f1c7",
   "tables": {
-    "advanced_configs": {
-      "name": "advanced_configs",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "server_id": {
-          "name": "server_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "advanced_server_id_idx": {
-          "name": "advanced_server_id_idx",
-          "columns": ["server_id"],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "onebot_adapters": {
       "name": "onebot_adapters",
       "columns": {
@@ -214,6 +184,13 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "adapter_id": {
+          "name": "adapter_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -228,7 +205,17 @@
           "isUnique": true
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "servers_adapter_id_onebot_adapters_id_fk": {
+          "name": "servers_adapter_id_onebot_adapters_id_fk",
+          "tableFrom": "servers",
+          "tableTo": "onebot_adapters",
+          "columnsFrom": ["adapter_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
