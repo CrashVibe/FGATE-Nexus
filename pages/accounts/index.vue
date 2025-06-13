@@ -169,14 +169,15 @@ const columns = [
 
 <style scoped lang="less">
 .accounts-page {
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 20px;
 }
 
 .page-header {
   margin-bottom: 24px;
-  text-align: center;
+  /* 去除 text-align: center; 使内容左对齐 */
+  text-align: left;
 
   h1 {
     margin: 0 0 8px 0;
@@ -234,54 +235,44 @@ const columns = [
 @media (max-width: 768px) {
   .accounts-page {
     padding: 12px;
+    max-width: 100vw;
   }
 
   .page-header {
     margin-bottom: 16px;
-
     h1 {
       font-size: 20px;
     }
-
     p {
       font-size: 13px;
     }
   }
-
   .search-controls {
     margin-bottom: 16px;
   }
-
-  /* 表格移动端优化 */
   :deep(.n-data-table) {
     .n-data-table-th,
     .n-data-table-td {
       padding: 8px 4px !important;
       font-size: 12px !important;
     }
-
     .n-data-table-th {
       font-weight: 600 !important;
     }
   }
 }
-
-/* 超小屏幕优化 */
 @media (max-width: 480px) {
   .accounts-page {
     padding: 8px;
   }
-
   .page-header {
     h1 {
       font-size: 18px;
     }
-
     p {
       font-size: 12px;
     }
   }
-
   :deep(.n-data-table) {
     .n-data-table-th,
     .n-data-table-td {

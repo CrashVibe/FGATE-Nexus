@@ -5,70 +5,70 @@
 html,
 body,
 #app {
-  height: 100%;
-  padding: 0;
-  margin: 0;
+    height: 100%;
+    padding: 0;
+    margin: 0;
 }
 
 html:not(.dark) {
-  background-color: white;
+    background-color: white;
 }
 html.dark {
-  background-color: black;
+    background-color: black;
 }
 
 /* 页面过渡动画 - 优化版本 */
 .page-enter-active {
-  transition: all 0.4s cubic-bezier(0.55, 0, 0.1, 1);
-  transform-origin: center center;
+    transition: all 0.4s cubic-bezier(0.55, 0, 0.1, 1);
+    transform-origin: center center;
 }
 
 .page-leave-active {
-  transition: all 0.4s cubic-bezier(0.55, 0, 0.1, 1);
-  transform-origin: center center;
+    transition: all 0.4s cubic-bezier(0.55, 0, 0.1, 1);
+    transform-origin: center center;
 }
 
 .page-enter-from {
-  opacity: 0;
-  transform: scale(0.9) translateY(50px);
+    opacity: 0;
+    transform: scale(0.9) translateY(50px);
 }
 
 .page-leave-to {
-  opacity: 0;
-  transform: scale(1.1) translateY(-30px);
+    opacity: 0;
+    transform: scale(1.1) translateY(-30px);
 }
 
 .page-enter-to,
 .page-leave-from {
-  opacity: 1;
-  transform: scale(1);
+    opacity: 1;
+    transform: scale(1);
 }
 
 /* 布局过渡动画 - 优化版本 */
 .layout-enter-active {
-  transition: all 0.3s cubic-bezier(0.55, 0, 0.1, 1);
-  transform-origin: center center;
+    transition: all 0.3s cubic-bezier(0.55, 0, 0.1, 1);
+    transform-origin: center center;
 }
 
 .layout-leave-active {
-  transition: all 0.3s cubic-bezier(0.55, 0, 0.1, 1);
-  transform-origin: center center;
+    transition: all 0.3s cubic-bezier(0.55, 0, 0.1, 1);
+    transform-origin: center center;
 }
 
 .layout-enter-from {
-  opacity: 0;
-  transform: scale(1.05);
+    opacity: 0;
+    transform: scale(1.05);
 }
 
 .layout-leave-to {
-  opacity: 0;
-  transform: scale(0.95);
+    opacity: 0;
+    transform: scale(0.95);
 }
 
 .layout-enter-to,
 .layout-leave-from {
-  opacity: 1;
-  transform: scale(1);
+    opacity: 1;
+    transform: scale(1);
 }
 
 /* 确保过渡期间的层级 */
@@ -76,247 +76,247 @@ html.dark {
 .page-leave-active,
 .layout-enter-active,
 .layout-leave-active {
-  position: relative;
-  z-index: 1;
+    position: relative;
+    z-index: 1;
 }
 
 /* 内容区域的平滑过渡 - 优化版本 */
 .content-transition-enter-active {
-  transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .content-transition-leave-active {
-  transition: all 0.15s ease-in-out;
+    transition: all 0.15s ease-in-out;
 }
 
 .content-transition-enter-from {
-  opacity: 0;
-  transform: scale(0.95) translateY(30px);
+    opacity: 0;
+    transform: scale(0.95) translateY(30px);
 }
 
 .content-transition-leave-to {
-  opacity: 0;
-  transform: translateY(5px) scale(0.99);
+    opacity: 0;
+    transform: translateY(5px) scale(0.99);
 }
 
 .content-transition-enter-to,
 .content-transition-leave-from {
-  opacity: 1;
-  transform: translateY(0) scale(1);
+    opacity: 1;
+    transform: translateY(0) scale(1);
 }
 
 /* 内容过渡动画增强 */
 .content-transition-enter-active {
-  transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .content-transition-enter-from {
-  opacity: 0;
-  transform: scale(0.95) translateY(30px);
+    opacity: 0;
+    transform: scale(0.95) translateY(30px);
 }
 
 .content-transition-enter-to {
-  opacity: 1;
-  transform: scale(1) translateY(0);
+    opacity: 1;
+    transform: scale(1) translateY(0);
 }
 
 /* 页面容器动画 */
 .page-container {
-  position: relative;
+    position: relative;
 }
 
 /* 为网格项添加悬停效果 */
 .n-grid-item {
-  transition: transform 0.2s ease;
+    transition: transform 0.2s ease;
 }
 
 /* 滚动动画增强 */
 @media (prefers-reduced-motion: no-preference) {
-  * {
-    scroll-behavior: smooth;
-  }
+    * {
+        scroll-behavior: smooth;
+    }
 
-  /* 提升动画质量 */
-  .page-transition-enter-active,
-  .page-transition-leave-active,
-  .layout-transition-enter-active,
-  .layout-transition-leave-active {
-    will-change: transform, opacity;
-    backface-visibility: hidden;
-    perspective: 1000px;
-  }
+    /* 提升动画质量 */
+    .page-transition-enter-active,
+    .page-transition-leave-active,
+    .layout-transition-enter-active,
+    .layout-transition-leave-active {
+        will-change: transform, opacity;
+        backface-visibility: hidden;
+        perspective: 1000px;
+    }
 }
 
 /* Loading Bar 自定义样式 */
 .n-loading-bar {
-  z-index: 9999 !important;
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  height: 4px !important;
+    z-index: 9999 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 4px !important;
 }
 
 /* 响应式设计 */
 @media only screen and (max-width: 639px) {
-  body {
-    overflow: visible;
-  }
+    body {
+        overflow: visible;
+    }
 
-  .page-enter-from {
-    transform: scale(0.9) translateY(30px);
-  }
+    .page-enter-from {
+        transform: scale(0.9) translateY(30px);
+    }
 
-  .page-leave-to {
-    transform: scale(1.05) translateY(-20px);
-  }
+    .page-leave-to {
+        transform: scale(1.05) translateY(-20px);
+    }
 
-  .layout-enter-from,
-  .layout-leave-to {
-    transform: scale(1.02);
-  }
+    .layout-enter-from,
+    .layout-leave-to {
+        transform: scale(1.02);
+    }
 }
 
 /* 移动端通用优化 */
 @media (max-width: 768px) {
-  /* 页面容器调整 */
-  .page-container {
-    padding: 12px;
-  }
-
-  /* Naive UI 组件移动端优化 */
-  :deep(.n-button) {
-    min-height: 40px !important;
-    padding: 10px 16px !important;
-    font-size: 14px !important;
-
-    /* 确保按钮文字居中 */
-    &.n-button--block {
-      justify-content: center !important;
+    /* 页面容器调整 */
+    .page-container {
+        padding: 12px;
     }
 
-    /* 图标按钮优化 */
-    .n-button__icon {
-      margin-right: 6px !important;
-    }
-  }
+    /* Naive UI 组件移动端优化 */
+    :deep(.n-button) {
+        min-height: 40px !important;
+        padding: 10px 16px !important;
+        font-size: 14px !important;
 
-  :deep(.n-input) {
-    min-height: 36px !important;
-  }
+        /* 确保按钮文字居中 */
+        &.n-button--block {
+            justify-content: center !important;
+        }
 
-  :deep(.n-select) {
-    min-height: 36px !important;
-  }
-
-  /* 模态框移动端优化 */
-  :deep(.n-modal) {
-    .n-card {
-      margin: 12px !important;
-      border-radius: 12px !important;
+        /* 图标按钮优化 */
+        .n-button__icon {
+            margin-right: 6px !important;
+        }
     }
 
-    .n-card__content {
-      padding: 16px !important;
+    :deep(.n-input) {
+        min-height: 36px !important;
     }
-  }
 
-  /* 网格系统优化 */
-  :deep(.n-grid) {
-    margin: 0 -8px !important;
-
-    .n-grid-item {
-      padding: 0 8px !important;
+    :deep(.n-select) {
+        min-height: 36px !important;
     }
-  }
 
-  /* 空间组件优化 */
-  :deep(.n-space) {
-    gap: 8px !important;
+    /* 模态框移动端优化 */
+    :deep(.n-modal) {
+        .n-card {
+            margin: 12px !important;
+            border-radius: 12px !important;
+        }
 
-    &.n-space--vertical {
-      gap: 12px !important;
+        .n-card__content {
+            padding: 16px !important;
+        }
     }
-  }
+
+    /* 网格系统优化 */
+    :deep(.n-grid) {
+        margin: 0 -8px !important;
+
+        .n-grid-item {
+            padding: 0 8px !important;
+        }
+    }
+
+    /* 空间组件优化 */
+    :deep(.n-space) {
+        gap: 8px !important;
+
+        &.n-space--vertical {
+            gap: 12px !important;
+        }
+    }
 }
 
 /* 超小屏幕优化 */
 @media (max-width: 480px) {
-  .page-container {
-    padding: 8px;
-  }
-
-  :deep(.n-button) {
-    min-height: 36px !important;
-    padding: 8px 12px !important;
-    font-size: 13px !important;
-
-    /* 小屏幕按钮间距优化 */
-    &:not(:last-child) {
-      margin-bottom: 4px;
+    .page-container {
+        padding: 8px;
     }
 
-    /* 图标按钮优化 */
-    .n-button__icon {
-      margin-right: 4px !important;
+    :deep(.n-button) {
+        min-height: 36px !important;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+
+        /* 小屏幕按钮间距优化 */
+        &:not(:last-child) {
+            margin-bottom: 4px;
+        }
+
+        /* 图标按钮优化 */
+        .n-button__icon {
+            margin-right: 4px !important;
+        }
     }
-  }
 
-  :deep(.n-input) {
-    min-height: 32px !important;
-    font-size: 14px !important;
-  }
-
-  :deep(.n-modal) {
-    .n-card {
-      margin: 8px !important;
+    :deep(.n-input) {
+        min-height: 32px !important;
+        font-size: 14px !important;
     }
 
-    .n-card__content {
-      padding: 12px !important;
-    }
-  }
+    :deep(.n-modal) {
+        .n-card {
+            margin: 8px !important;
+        }
 
-  /* 网格间距进一步减小 */
-  :deep(.n-grid) {
-    margin: 0 -6px !important;
-
-    .n-grid-item {
-      padding: 0 6px !important;
+        .n-card__content {
+            padding: 12px !important;
+        }
     }
-  }
 
-  /* 卡片内边距优化 */
-  :deep(.n-card) {
-    .n-card__content {
-      padding: 12px !important;
+    /* 网格间距进一步减小 */
+    :deep(.n-grid) {
+        margin: 0 -6px !important;
+
+        .n-grid-item {
+            padding: 0 6px !important;
+        }
     }
-  }
+
+    /* 卡片内边距优化 */
+    :deep(.n-card) {
+        .n-card__content {
+            padding: 12px !important;
+        }
+    }
 }
 
 /* 滚动条美化 */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+    width: 8px;
+    height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
-  transition: background 0.2s ease;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.3);
 }
 
 /* 提升文字渲染质量 */
 * {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }

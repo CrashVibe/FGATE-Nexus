@@ -6,27 +6,27 @@ export type onebot_adaptersInsert = InferInsertModel<typeof onebotAdaptersTable>
 
 // 输入式接口定义
 export interface AdapterUnion<T extends string, B = unknown, C = unknown> {
-  id: number;
-  type: T;
-  adapterType: T;
-  connected?: boolean;
-  detail?: B;
-  config?: C;
+    id: number;
+    type: T;
+    adapterType: T;
+    connected?: boolean;
+    detail?: B;
+    config?: C;
 }
 
 // onebot 类型实现
 export type OnebotAdapterUnion = AdapterUnion<
-  'onebot',
-  InferSelectModel<typeof onebotAdaptersTable> & { connected: boolean },
-  InferSelectModel<typeof onebotAdaptersTable>
+    'onebot',
+    InferSelectModel<typeof onebotAdaptersTable> & { connected: boolean },
+    InferSelectModel<typeof onebotAdaptersTable>
 >;
 
 // WebSocket 适配器类型
 export interface WebSocketAdapterDetail {
-  url?: string;
-  autoReconnect?: boolean;
-  connected?: boolean;
-  enabled?: boolean;
+    url?: string;
+    autoReconnect?: boolean;
+    connected?: boolean;
+    enabled?: boolean;
 }
 
 export type WebSocketAdapterUnion = AdapterUnion<'websocket', WebSocketAdapterDetail, WebSocketAdapterDetail>;

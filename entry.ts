@@ -9,40 +9,40 @@ process.chdir(execDir);
 console.log('💼 Working directory set to', process.cwd());
 
 async function initDatabase() {
-  const dbFilePath = path.resolve('./sqlite.db');
-  const isNewDatabase = !fs.existsSync(dbFilePath);
+    const dbFilePath = path.resolve('./sqlite.db');
+    const isNewDatabase = !fs.existsSync(dbFilePath);
 
-  const client = new Database(dbFilePath);
+    const client = new Database(dbFilePath);
 
-  const db = drizzle(client);
+    const db = drizzle(client);
 
-  if (isNewDatabase) {
-    console.log('🔧 数据库不存在，正在初始化...');
-  } else {
-    console.log('🔄 检查并执行数据库迁移...');
-  }
+    if (isNewDatabase) {
+        console.log('🔧 数据库不存在，正在初始化...');
+    } else {
+        console.log('🔄 检查并执行数据库迁移...');
+    }
 
-  try {
-    await migrate(db, {
-      migrationsFolder: path.resolve('./migrations')
-    });
+    try {
+        await migrate(db, {
+            migrationsFolder: path.resolve('./migrations')
+        });
 
-    console.log('✅ 数据库准备就绪');
-  } catch (e) {
-    console.error('数据库迁移失败:', e);
-    process.exit(1);
-  }
+        console.log('✅ 数据库准备就绪');
+    } catch (e) {
+        console.error('数据库迁移失败:', e);
+        process.exit(1);
+    }
 }
 
 async function startApplication() {
-  try {
-    await initDatabase();
+    try {
+        await initDatabase();
 
-    await import('./.output/server/index.mjs');
-  } catch (e) {
-    console.error('应用启动失败:', e);
-    process.exit(1);
-  }
+        await import('./.output/server/index.mjs');
+    } catch (e) {
+        console.error('应用启动失败:', e);
+        process.exit(1);
+    }
 }
 
 startApplication();

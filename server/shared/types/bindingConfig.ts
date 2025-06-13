@@ -4,7 +4,7 @@ import type { ServerBindingConfig } from '~/server/utils/config/bindingConfigMan
  * 获取绑定配置的响应类型
  */
 export interface GetBindingConfigResponse {
-  config: ServerBindingConfig | null;
+    config: ServerBindingConfig | null;
 }
 
 /**
@@ -16,5 +16,5 @@ export type UpdateBindingConfigRequest = Partial<Omit<ServerBindingConfig, 'serv
  * 更新绑定配置的响应类型
  */
 export interface UpdateBindingConfigResponse {
-  config: ServerBindingConfig;
+    config: ServerBindingConfig;
 }

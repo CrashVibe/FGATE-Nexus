@@ -1,47 +1,47 @@
 import type {
-  ApiResponse,
-  ServerWithStatus,
-  AdapterListResponse,
-  PlayerListResponse,
-  SocialAccountListResponse,
-  ServerListResponse
+    ApiResponse,
+    ServerWithStatus,
+    AdapterListResponse,
+    PlayerListResponse,
+    SocialAccountListResponse,
+    ServerListResponse
 } from '~/server/shared/types/server/api';
 import type { AdapterPayload } from '~/utils/adapters/forms';
 
 export const useApi = () => {
-  const { $serverAPI } = useNuxtApp();
+    const { $serverAPI } = useNuxtApp();
 
-  const serverApi = {
-    getServerList: () => $serverAPI.Get<ServerListResponse>('/servers/list'),
-    addServer: (data: { name: string; token: string }) => $serverAPI.Post<ApiResponse<void>>('/servers/add', data),
-    getServer: (id: number) => $serverAPI.Get<ApiResponse<ServerWithStatus>>(`/servers/${id}`),
-    updateServer: (id: number, data: { name: string; adapter_id?: number | null }) =>
-      $serverAPI.Put<ApiResponse<void>>(`/servers/${id}`, data),
-    deleteServer: (id: number) => $serverAPI.Delete<ApiResponse<void>>(`/servers/${id}`),
-    getServerStatus: (id: number) => $serverAPI.Get<ApiResponse<ServerWithStatus>>(`/servers/${id}`),
-    disconnectServer: (id: number) => $serverAPI.Put<ApiResponse<void>>(`/servers/${id}/disconnect`),
-    clearServerData: (id: number) => $serverAPI.Delete<ApiResponse<void>>(`/servers/${id}/clear`)
-  };
+    const serverApi = {
+        getServerList: () => $serverAPI.Get<ServerListResponse>('/servers/list'),
+        addServer: (data: { name: string; token: string }) => $serverAPI.Post<ApiResponse<void>>('/servers/add', data),
+        getServer: (id: number) => $serverAPI.Get<ApiResponse<ServerWithStatus>>(`/servers/${id}`),
+        updateServer: (id: number, data: { name: string; adapter_id?: number | null }) =>
+            $serverAPI.Put<ApiResponse<void>>(`/servers/${id}`, data),
+        deleteServer: (id: number) => $serverAPI.Delete<ApiResponse<void>>(`/servers/${id}`),
+        getServerStatus: (id: number) => $serverAPI.Get<ApiResponse<ServerWithStatus>>(`/servers/${id}`),
+        disconnectServer: (id: number) => $serverAPI.Put<ApiResponse<void>>(`/servers/${id}/disconnect`),
+        clearServerData: (id: number) => $serverAPI.Delete<ApiResponse<void>>(`/servers/${id}/clear`)
+    };
 
-  const adapterApi = {
-    getAdapters: () => $serverAPI.Get<AdapterListResponse>('/adapters'),
-    addAdapter: (data: AdapterPayload) => $serverAPI.Post<ApiResponse<void>>('/adapters', data),
-    updateAdapter: (id: number, data: AdapterPayload) => $serverAPI.Put<ApiResponse<void>>(`/adapters/${id}`, data),
-    deleteAdapter: (id: number) => $serverAPI.Delete<ApiResponse<void>>(`/adapters/${id}`)
-  };
+    const adapterApi = {
+        getAdapters: () => $serverAPI.Get<AdapterListResponse>('/adapters'),
+        addAdapter: (data: AdapterPayload) => $serverAPI.Post<ApiResponse<void>>('/adapters', data),
+        updateAdapter: (id: number, data: AdapterPayload) => $serverAPI.Put<ApiResponse<void>>(`/adapters/${id}`, data),
+        deleteAdapter: (id: number) => $serverAPI.Delete<ApiResponse<void>>(`/adapters/${id}`)
+    };
 
-  const playerApi = {
-    getPlayers: () => $serverAPI.Get<PlayerListResponse>('/players/list')
-  };
+    const playerApi = {
+        getPlayers: () => $serverAPI.Get<PlayerListResponse>('/players/list')
+    };
 
-  const accountApi = {
-    getAccounts: () => $serverAPI.Get<SocialAccountListResponse>('/accounts/list')
-  };
+    const accountApi = {
+        getAccounts: () => $serverAPI.Get<SocialAccountListResponse>('/accounts/list')
+    };
 
-  return {
-    serverApi,
-    adapterApi,
-    playerApi,
-    accountApi
-  };
+    return {
+        serverApi,
+        adapterApi,
+        playerApi,
+        accountApi
+    };
 };

@@ -55,13 +55,13 @@ watch([search, pageSize], () => {
 });
 
 const columns = computed(() => [
-  { title: '玩家名', key: 'name', ellipsis: { tooltip: true } },
-  { title: 'UUID', key: 'uuid', ellipsis: { tooltip: true }, width: isMobile.value ? undefined : 200 },
-  { title: 'IP', key: 'ip', width: isMobile.value ? undefined : 120 },
+  { title: '玩家名', key: 'name', ellipsis: { tooltip: true }, minWidth: isMobile.value ? undefined : 120 },
+  { title: 'UUID', key: 'uuid', ellipsis: { tooltip: true }, width: isMobile.value ? undefined : 240 },
+  { title: 'IP', key: 'ip', width: isMobile.value ? undefined : 140 },
   {
     title: '社交账号',
     key: 'socialAccounts',
-    width: isMobile.value ? undefined : 100,
+    width: isMobile.value ? undefined : 120,
     render: (row: Player) => {
       return row.socialAccountId ? 1 : 0;
     }
@@ -69,7 +69,7 @@ const columns = computed(() => [
   {
     title: '所在服务器',
     key: 'servers',
-    width: isMobile.value ? undefined : 120,
+    width: isMobile.value ? undefined : 140,
     render: (row: Player) => {
       return row.servers?.length || 0;
     }
@@ -77,7 +77,7 @@ const columns = computed(() => [
   {
     title: '更新时间',
     key: 'updatedAt',
-    width: isMobile.value ? undefined : 150,
+    width: isMobile.value ? undefined : 180,
     render: (row: Player) => {
       if (!row.updatedAt) return '-';
       return new Date(row.updatedAt).toLocaleDateString('zh-CN');
@@ -178,14 +178,15 @@ const columns = computed(() => [
 
 <style scoped lang="less">
 .players-page {
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 20px;
 }
 
 .page-header {
   margin-bottom: 24px;
-  text-align: center;
+  /* 去除 text-align: center; 使内容左对齐 */
+  text-align: left;
 
   h1 {
     margin: 0 0 8px 0;
@@ -243,54 +244,44 @@ const columns = computed(() => [
 @media (max-width: 768px) {
   .players-page {
     padding: 12px;
+    max-width: 100vw;
   }
 
   .page-header {
     margin-bottom: 16px;
-
     h1 {
       font-size: 20px;
     }
-
     p {
       font-size: 13px;
     }
   }
-
   .search-controls {
     margin-bottom: 16px;
   }
-
-  /* 表格移动端优化 */
   :deep(.n-data-table) {
     .n-data-table-th,
     .n-data-table-td {
       padding: 8px 4px !important;
       font-size: 12px !important;
     }
-
     .n-data-table-th {
       font-weight: 600 !important;
     }
   }
 }
-
-/* 超小屏幕优化 */
 @media (max-width: 480px) {
   .players-page {
     padding: 8px;
   }
-
   .page-header {
     h1 {
       font-size: 18px;
     }
-
     p {
       font-size: 12px;
     }
   }
-
   :deep(.n-data-table) {
     .n-data-table-th,
     .n-data-table-td {

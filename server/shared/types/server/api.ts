@@ -5,9 +5,9 @@ import type { Server } from './server';
 import type { AdapterUnionType } from '~/server/utils/adapters/adapterManager';
 
 export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data?: T;
+    success: boolean;
+    message: string;
+    data?: T;
 }
 
 export type ServerWithStatus = Server & ServerStatus;
