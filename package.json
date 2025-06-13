@@ -23,6 +23,7 @@
     "@vicons/ionicons5": "^0.13.0",
     "@vueuse/core": "^13.3.0",
     "alova": "^3.3.1",
+    "better-sqlite3": "^11.10.0",
     "crossws": "0.4.1",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.44.2",
@@ -37,7 +38,7 @@
     "ws": "^8.18.2"
   },
   "devDependencies": {
-    "@libsql/client": "^0.15.9",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "latest",
     "@types/ws": "^8.18.1",
     "@vercel/ncc": "^0.38.3",
@@ -49,5 +50,6 @@
     "typescript": "^5.8.3",
     "unplugin-auto-import": "^19.3.0",
     "unplugin-vue-components": "^28.7.0"
-  }
+  },
+  "packageManager": "pnpm@10.12.1+sha512.f0dda8580f0ee9481c5c79a1d927b9164f2c478e90992ad268bbb2465a736984391d6333d2c327913578b2804af33474ca554ba29c04a8b13060a717675ae3ac"
 }

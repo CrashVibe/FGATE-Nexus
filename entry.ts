@@ -38,14 +38,7 @@ async function startApplication() {
   try {
     await initDatabase();
 
-    // 动态导入构建后的服务器文件
-    const serverPath = './.output/server/index.mjs';
-    if (fs.existsSync(serverPath)) {
-      await import(serverPath);
-    } else {
-      console.warn('⚠️  服务器文件不存在，请先构建项目');
-      process.exit(1);
-    }
+    await import('./.output/server/index.mjs');
   } catch (e) {
     console.error('应用启动失败:', e);
     process.exit(1);
