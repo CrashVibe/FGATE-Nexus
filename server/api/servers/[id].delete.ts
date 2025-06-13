@@ -23,9 +23,9 @@ export default defineEventHandler(async (event) => {
       if (!p.servers) continue;
       const list = p.servers
         .split(',')
-        .map((id) => Number(id))
+        .map((id: string) => Number(id))
         .filter(Boolean);
-      const filtered = list.filter((id) => id !== serverId);
+      const filtered = list.filter((id: number) => id !== serverId);
       if (filtered.length !== list.length) {
         await db
           .update(players)

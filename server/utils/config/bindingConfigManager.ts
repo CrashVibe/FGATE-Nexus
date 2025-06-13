@@ -1,8 +1,7 @@
 import { db } from '~/server/database/client';
 import { server_binding_configs } from '~/server/database/schema';
 import { eq } from 'drizzle-orm';
-import fs from 'fs/promises';
-import path from 'path';
+import defaultConfig from '../../../configs/server_binding_defaults.json';
 
 export type ServerBindingConfig = typeof server_binding_configs.$inferInsert;
 
@@ -86,7 +85,5 @@ export class BindingConfigManager {
 }
 
 async function loadDefaultConfig(): Promise<Omit<ServerBindingConfig, 'server_id' | 'createdAt' | 'updatedAt'>> {
-  const configPath = path.resolve(__dirname, '../../../configs/server_binding_defaults.json');
-  const content = await fs.readFile(configPath, 'utf-8');
-  return JSON.parse(content);
+  return defaultConfig;
 }
