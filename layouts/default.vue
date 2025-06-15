@@ -7,13 +7,19 @@
           <n-avatar size="small" :src="'/favicon.ico'" style="width: 24px; height: 24px" />
           <n-text strong>服务器管理系统</n-text>
         </n-space>
-        <!-- 手机端菜单按钮 -->
-        <n-button v-if="isMobile" quaternary class="mobile-menu-button" @click="showMobileMenu = true">
-          <template #icon>
-            <n-icon :component="MenuOutline" />
-          </template>
-          菜单
-        </n-button>
+
+        <n-space align="center">
+          <!-- 主题切换按钮 -->
+          <ThemeToggle />
+
+          <!-- 手机端菜单按钮 -->
+          <n-button v-if="isMobile" quaternary class="mobile-menu-button" @click="showMobileMenu = true">
+            <template #icon>
+              <n-icon :component="MenuOutline" />
+            </template>
+            菜单
+          </n-button>
+        </n-space>
       </n-space>
     </n-layout-header>
 

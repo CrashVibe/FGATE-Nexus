@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { darkTheme, lightTheme } from 'naive-ui';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import './assets/css/index.less';
 import { useDark } from '@vueuse/core';
 
-const isDark = useDark();
+const isDark = useDark({
+  storageKey: 'vueuse-color-scheme',
+  selector: 'html',
+  attribute: 'class',
+  valueDark: 'dark',
+  valueLight: 'light'
+});
 
-const theme = isDark.value ? darkTheme : lightTheme;
+const theme = computed(() => (isDark.value ? darkTheme : lightTheme));
 
 const themeOverrides = {
   Card: {
