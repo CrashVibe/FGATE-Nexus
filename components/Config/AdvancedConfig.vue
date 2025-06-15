@@ -1,53 +1,42 @@
 <template>
   <div class="advanced-config">
-    <n-space vertical size="large">
-      <!-- 连接状态 -->
-      <n-card title="服务器状态" size="small">
-        <n-space vertical size="medium">
-          <n-space align="center">
-            <n-text>连接状态：</n-text>
-            <n-tag :type="serverStatus.isOnline ? 'success' : 'error'" size="small">
-              {{ serverStatus.isOnline ? '在线' : '离线' }}
-            </n-tag>
-          </n-space>
+    <!-- 使用 Naive UI 网格系统进行响应式布局 -->
+    <n-grid :cols="1" y-gap="20" :item-responsive="true">
+      <!-- 服务器管理卡片 -->
+      <n-gi>
+        <n-card title="服务器管理" size="small" hoverable>
+          <n-alert type="info" title="提示" class="management-alert"> 这些操作将影响服务器连接和数据 </n-alert>
 
-          <n-space v-if="serverStatus.isOnline" align="center">
-            <n-text>在线玩家：</n-text>
-            <n-text>{{ serverStatus.playerCount || 0 }}</n-text>
-          </n-space>
+          <n-grid :cols="isMobile ? 1 : 2" x-gap="20" y-gap="16" :item-responsive="true">
+            <!-- 连接管理 -->
+            <n-gi>
+              <n-card embedded class="action-card">
+                <template #header>
+                  <n-text>连接管理</n-text>
+                </template>
+                <n-space vertical size="medium">
+                  <n-button type="warning" :loading="operating" block @click="forceDisconnect"> 断开连接 </n-button>
+                  <n-text depth="3" style="text-align: center"> 断开与服务器的连接 </n-text>
+                </n-space>
+              </n-card>
+            </n-gi>
 
-          <n-space v-if="serverStatus.lastSeen" align="center">
-            <n-text>最后连接：</n-text>
-            <n-text>{{ formatTime(serverStatus.lastSeen) }}</n-text>
-          </n-space>
-        </n-space>
-      </n-card>
-
-      <!-- 服务器管理 -->
-      <n-card title="服务器管理" size="small">
-        <n-alert type="info" title="提示" style="margin-bottom: 16px"> 这些操作将影响服务器连接和数据 </n-alert>
-
-        <n-space :vertical="isMobile" size="medium">
-          <n-form-item label="连接管理">
-            <n-space :vertical="isMobile" :align="isMobile ? 'stretch' : 'center'">
-              <n-button type="warning" :loading="operating" :block="isMobile" @click="forceDisconnect">
-                断开连接
-              </n-button>
-              <n-text depth="3">断开与服务器的连接</n-text>
-            </n-space>
-          </n-form-item>
-
-          <n-form-item label="服务器删除">
-            <n-space :vertical="isMobile" :align="isMobile ? 'stretch' : 'center'">
-              <n-button type="error" :loading="operating" :block="isMobile" @click="deleteServer">
-                删除服务器
-              </n-button>
-              <n-text depth="3">永久删除服务器及其所有数据</n-text>
-            </n-space>
-          </n-form-item>
-        </n-space>
-      </n-card>
-    </n-space>
+            <!-- 服务器删除 -->
+            <n-gi>
+              <n-card embedded class="action-card">
+                <template #header>
+                  <n-text>服务器删除</n-text>
+                </template>
+                <n-space vertical size="medium">
+                  <n-button type="error" :loading="operating" block @click="deleteServer"> 删除服务器 </n-button>
+                  <n-text depth="3" style="text-align: center"> 永久删除服务器及其所有数据 </n-text>
+                </n-space>
+              </n-card>
+            </n-gi>
+          </n-grid>
+        </n-card>
+      </n-gi>
+    </n-grid>
   </div>
 </template>
 
@@ -162,18 +151,6 @@ const deleteServer = () => {
   });
 };
 
-const formatTime = (date: Date | null) => {
-  if (!date) return '从未连接';
-  return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  }).format(new Date(date));
-};
-
 let statusInterval: ReturnType<typeof setInterval> | null = null;
 
 onMounted(() => {
@@ -191,58 +168,23 @@ onBeforeUnmount(() => {
 
 <style scoped lang="less">
 .advanced-config {
-  .n-card {
+  .management-alert {
     margin-bottom: 16px;
   }
-}
 
-/* 移动端优化 */
-@media (max-width: 768px) {
-  .advanced-config {
-    .n-card {
-      margin-bottom: 12px;
+  .action-card {
+    height: 100%;
 
-      :deep(.n-card__content) {
-        padding: 12px;
-      }
-
-      .n-form-item {
-        :deep(.n-form-item__label) {
-          font-size: 14px;
-          margin-bottom: 8px;
-        }
-      }
-
-      .n-alert {
-        margin-bottom: 12px;
-
-        :deep(.n-alert__content) {
-          font-size: 13px;
-          line-height: 1.4;
-        }
-      }
+    :deep(.n-card__header) {
+      text-align: center;
+      font-weight: 600;
     }
-  }
-}
 
-@media (max-width: 480px) {
-  .advanced-config {
-    .n-card {
-      :deep(.n-card__content) {
-        padding: 8px;
-      }
-
-      .n-form-item {
-        :deep(.n-form-item__label) {
-          font-size: 13px;
-        }
-      }
-
-      .n-alert {
-        :deep(.n-alert__content) {
-          font-size: 12px;
-        }
-      }
+    :deep(.n-card__content) {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
     }
   }
 }

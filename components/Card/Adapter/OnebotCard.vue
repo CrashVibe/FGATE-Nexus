@@ -108,6 +108,11 @@
               {{ adapter.connected ? '已连接' : '未连接' }}
             </n-tag>
           </div>
+
+          <!-- 新增底部提示 -->
+          <div class="card-footer-tip">
+            <n-text depth="3" style="font-size: 12px; opacity: 0.7; user-select: none"> 点击卡片可编辑 </n-text>
+          </div>
         </div>
       </transition>
     </div>
@@ -247,14 +252,22 @@ function deleteAdapter() {
 .adapter-card {
   width: 100%;
   transition: transform 0.3s;
+  cursor: pointer;
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s,
+    background 0.2s;
 }
 
 .adapter-card:hover {
   transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.13);
+  border-color: #409eff;
+  background: rgba(64, 158, 255, 0.04);
 }
 
 .card-content {
-  padding: 16px;
+  padding: 4px;
 }
 
 .header {
@@ -291,5 +304,17 @@ function deleteAdapter() {
 
 .mobile-layout {
   flex-direction: column;
+}
+
+.clickable-icon {
+  color: #409eff;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  vertical-align: middle;
+}
+
+.card-footer-tip {
+  margin-top: 8px;
+  text-align: right;
 }
 </style>

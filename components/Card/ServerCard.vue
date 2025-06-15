@@ -22,7 +22,6 @@
               {{ server.isOnline ? '在线' : '离线' }}
             </n-tag>
           </div>
-          <!-- 移动端不显示 version-tag，合并到 software-info -->
           <n-tag
             v-if="!isMobile"
             :bordered="false"
@@ -98,6 +97,10 @@
               </n-button>
             </n-input-group>
           </div>
+        </div>
+        <!-- 新增底部提示 -->
+        <div class="card-footer-tip">
+          <n-text depth="3" style="font-size: 12px; opacity: 0.7; user-select: none"> 点击卡片查看更多信息 </n-text>
         </div>
       </div>
     </n-card>
@@ -211,11 +214,21 @@ const getSoftwareIcon = (software: string | null) => {
 }
 
 .server-card {
+  cursor: pointer;
   border-radius: 8px;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s,
+    background 0.2s;
 
   &.offline {
     filter: grayscale(0.3);
+  }
+
+  &:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.13);
+    border-color: #409eff;
+    background: rgba(64, 158, 255, 0.04);
   }
 }
 
@@ -320,6 +333,18 @@ const getSoftwareIcon = (software: string | null) => {
 
 .token-display {
   cursor: pointer;
+}
+
+.clickable-icon {
+  color: #409eff;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  vertical-align: middle;
+}
+
+.card-footer-tip {
+  margin-top: 8px;
+  text-align: right;
 }
 
 /* 移动端优化 */

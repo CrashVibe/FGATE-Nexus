@@ -27,6 +27,10 @@
         <div class="button-row">
           <n-button type="error" size="small" @click="handleDelete"> 删除 </n-button>
         </div>
+        <!-- 新增底部提示 -->
+        <div class="card-footer-tip">
+          <n-text depth="3" style="font-size: 12px; opacity: 0.7; user-select: none"> 点击卡片查看更多信息 </n-text>
+        </div>
       </div>
     </div>
   </n-card>
@@ -105,12 +109,17 @@ function handleDelete() {
     0 1px 3px rgba(0, 0, 0, 0.1);
   transform: translateY(0);
   cursor: pointer;
+  &:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.13);
+    border-color: #409eff;
+    background: rgba(64, 158, 255, 0.04);
+  }
 }
-.adapter-card:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 12px 16px rgba(0, 0, 0, 0.1),
-    0 4px 6px rgba(0, 0, 0, 0.05);
+.clickable-icon {
+  color: #409eff;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  vertical-align: middle;
 }
 .card-content {
   display: flex;
@@ -184,5 +193,9 @@ function handleDelete() {
   gap: 12px;
   margin-top: 12px;
   flex-direction: row-reverse;
+}
+.card-footer-tip {
+  margin-top: 8px;
+  text-align: right;
 }
 </style>

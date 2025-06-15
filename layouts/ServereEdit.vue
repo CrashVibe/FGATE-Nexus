@@ -60,7 +60,7 @@
 
 <script setup lang="ts">
 import { useBreakpoint, useMemo } from 'vooks';
-import { MenuOutline } from '@vicons/ionicons5';
+import { MenuOutline, SettingsOutline, LinkOutline, BuildOutline, ArrowBackOutline } from '@vicons/ionicons5';
 import { useRouter, useRoute, type RouteLocationAsPathGeneric } from 'vue-router';
 import { ref, computed, h, provide, onUnmounted, onMounted } from 'vue';
 import { useDialog, NIcon } from 'naive-ui';
@@ -143,26 +143,32 @@ const menuOptions = computed(() => {
   menu.push({
     label: '返回服务器管理',
     key: '/',
-    icon: () => h(NIcon, null, { default: () => h(MenuOutline) }),
+    icon: () => h(NIcon, null, { default: () => h(ArrowBackOutline) }),
     desc: '返回服务器列表主页。'
   });
   if (serverId) {
     menu.push({
+      label: '配置概览',
+      key: `/servers/${serverId}/config`,
+      icon: () => h(NIcon, null, { default: () => h(MenuOutline) }),
+      desc: '查看所有可用的配置选项。'
+    });
+    menu.push({
       label: '基础设置',
       key: `/servers/${serverId}/general`,
-      icon: () => h(NIcon, null, { default: () => h(MenuOutline) }),
+      icon: () => h(NIcon, null, { default: () => h(SettingsOutline) }),
       desc: '配置服务器的基础运行参数和常规设置。'
     });
     menu.push({
       label: '账号绑定',
       key: `/servers/${serverId}/binding`,
-      icon: () => h(NIcon, null, { default: () => h(MenuOutline) }),
+      icon: () => h(NIcon, null, { default: () => h(LinkOutline) }),
       desc: '设置社交账号与游戏账号的绑定规则。'
     });
     menu.push({
       label: '高级配置',
       key: `/servers/${serverId}/advanced`,
-      icon: () => h(NIcon, null, { default: () => h(MenuOutline) }),
+      icon: () => h(NIcon, null, { default: () => h(BuildOutline) }),
       desc: '高级功能配置，包括性能优化、调试选项等。'
     });
   }
@@ -170,6 +176,9 @@ const menuOptions = computed(() => {
 });
 
 const selectedKey = computed(() => route.path || '');
+
+// 提供菜单选项给子组件
+provide('menuOptions', menuOptions);
 
 // 添加未保存更改的关闭/刷新提示
 onMounted(() => {

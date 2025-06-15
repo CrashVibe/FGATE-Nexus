@@ -9,9 +9,21 @@
     </n-card>
 
     <!-- 配置选项卡片 -->
-    <n-grid :cols="isMobile ? 1 : '1 600:2 900:3'" x-gap="20" y-gap="20" :item-responsive="true">
+    <n-grid
+      v-if="configMenuItems.length > 0"
+      :cols="isMobile ? 1 : '1 600:2 900:3'"
+      x-gap="20"
+      y-gap="20"
+      :item-responsive="true"
+    >
       <n-gi v-for="menuItem in configMenuItems" :key="menuItem.key" :span="getCardSpan(menuItem.label)">
-        <n-card :title="menuItem.label" hoverable class="config-card" @click="navigateToMenuItem(menuItem.key)">
+        <n-card
+          :title="menuItem.label"
+          hoverable
+          embedded
+          class="config-card"
+          @click="navigateToMenuItem(menuItem.key)"
+        >
           <template #header-extra>
             <n-icon :component="getIconForMenuItem(menuItem.key)" size="20" />
           </template>
@@ -19,11 +31,18 @@
         </n-card>
       </n-gi>
     </n-grid>
+
+    <!-- 空状态提示 -->
+    <n-empty v-else class="empty-state" description="暂无可用的配置选项">
+      <template #extra>
+        <n-button quaternary @click="$router.push('/')"> 返回服务器列表 </n-button>
+      </template>
+    </n-empty>
   </ServerPageWrapper>
 </template>
 
 <script setup lang="ts">
-import { computed, inject, h } from 'vue';
+import { computed, inject } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { SettingsOutline } from '@vicons/ionicons5';
 import { useBreakpoint, useMemo } from 'vooks';
@@ -69,9 +88,14 @@ const desc = computed(() => {
 
 // 过滤出配置相关的菜单项
 const configMenuItems = computed(() => {
-  return menuOptions.value.filter(
-    (item) => item.key !== '/' && item.key.includes('/servers/') && !item.key.includes('/config')
-  );
+  const serverId = route.params.id;
+  if (!serverId) return [];
+
+  // 返回除了当前config页面和根目录之外的所有服务器相关页面
+  return menuOptions.value.filter((item) => {
+    const key = item.key;
+    return key !== '/' && key.includes(`/servers/${serverId}`) && key !== route.path; // 排除当前页面
+  });
 });
 
 const navigateToMenuItem = (key: string) => {
@@ -80,106 +104,75 @@ const navigateToMenuItem = (key: string) => {
 
 const getIconForMenuItem = (key: string) => {
   const menuItem = menuOptions.value.find((item) => item.key === key);
-  // 如果找到了菜单项且有 icon，返回 icon 函数，否则返回默认图标
-  return menuItem?.icon || (() => h('n-icon', null, { default: () => h(SettingsOutline) }));
+  if (menuItem?.icon && typeof menuItem.icon === 'function') {
+    try {
+      return menuItem.icon;
+    } catch (error) {
+      console.warn('Error rendering menu icon:', error);
+    }
+  }
+  // 返回默认图标
+  return SettingsOutline;
 };
 
-// 根据标题长度决定卡片占用的列数（span值）
 const getCardSpan = (title: string) => {
-  // 长标题（超过4个字符）在大屏幕上占2列，短标题占1列
-  // 在窄屏幕上所有卡片都占1列（由responsive breakpoints控制）
   return title.length > 4 ? 2 : 1;
 };
 </script>
 
 <style scoped lang="less">
+.desc-card {
+  margin-bottom: 24px;
+}
+
 .config-card {
   height: 100%;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s var(--n-bezier);
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   }
 
-  :deep(.n-card__header) {
-    .n-card__header__main {
-      font-weight: 500;
-      font-size: 16px;
-    }
+  &:active {
+    transform: translateY(0);
   }
 
-  :deep(.n-card__content) {
-    padding-top: 8px;
+  :deep(.n-card__header-extra .n-icon) {
+    color: var(--n-primary-color);
+    transition: all 0.2s var(--n-bezier);
+  }
+
+  &:hover :deep(.n-card__header-extra .n-icon) {
+    transform: scale(1.1);
+    color: var(--n-primary-color-hover);
   }
 }
 
-// 简介卡片样式
-.desc-card {
-  margin-bottom: 20px;
+.empty-state {
+  margin-top: 60px;
 }
 
-// 响应式调整
 @media (max-width: 768px) {
+  .empty-state {
+    margin-top: 40px;
+  }
+
   .config-card {
     &:hover {
-      transform: none; // 移动端禁用hover变换
-    }
-
-    :deep(.n-card__header) {
-      .n-card__header__main {
-        font-size: 15px;
-      }
-
-      .n-card__header__extra {
-        .n-icon {
-          font-size: 18px;
-        }
-      }
-    }
-
-    :deep(.n-card__content) {
-      font-size: 13px;
-      line-height: 1.4;
-    }
-  }
-
-  .desc-card {
-    margin-bottom: 16px;
-
-    :deep(.n-card__content) {
-      font-size: 13px;
-      line-height: 1.4;
+      transform: translateY(-1px);
     }
   }
 }
 
 @media (max-width: 480px) {
-  .config-card {
-    :deep(.n-card__header) {
-      .n-card__header__main {
-        font-size: 14px;
-      }
-
-      .n-card__header__extra {
-        .n-icon {
-          font-size: 16px;
-        }
-      }
-    }
-
-    :deep(.n-card__content) {
-      font-size: 12px;
-      padding-top: 6px;
-    }
+  .empty-state {
+    margin-top: 30px;
   }
 
-  .desc-card {
-    margin-bottom: 12px;
-
-    :deep(.n-card__content) {
-      font-size: 12px;
+  .config-card {
+    &:hover {
+      transform: none;
     }
   }
 }

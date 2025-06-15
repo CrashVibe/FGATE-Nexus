@@ -1,444 +1,277 @@
 <template>
   <ServerPageWrapper>
-    <!-- 页面标题 -->
     <ServerPageHeader title="账号绑定" :server-name="serverName" />
 
-    <!-- 绑定配置内容 -->
-    <n-card size="small" class="binding-config-card">
-      <!-- 适配器状态警告 -->
-      <template v-if="!loading && adapterStatus && !adapterStatus.hasAdapter">
-        <n-alert type="error" title="未配置适配器" style="margin-bottom: 16px">
-          <template #icon>
-            <n-icon>
-              <HelpCircleOutline />
-            </n-icon>
-          </template>
-          该服务器未配置绑定适配器，无法使用账号绑定功能。请先前往
-          <n-button text type="primary" @click="navigateToGeneral"> 基础设置页面 </n-button>
-          配置适配器。
-        </n-alert>
+    <!-- 未保存提示条（仿 GeneralConfig.vue） -->
+    <n-alert v-if="isDirty" type="warning" class="unsaved-alert" closable show-icon>
+      <template #icon>
+        <n-icon>
+          <HelpCircleOutline />
+        </n-icon>
       </template>
+      <div class="unsaved-content">
+        <div class="unsaved-text">您有未保存的更改</div>
+        <n-space size="small">
+          <n-button size="small" type="primary" :loading="loading" @click="saveBinding"> 保存更改 </n-button>
+          <n-button size="small" quaternary @click="discardChanges"> 放弃更改 </n-button>
+        </n-space>
+      </div>
+    </n-alert>
 
-      <template v-else-if="!loading && adapterStatus && adapterStatus.hasAdapter && !adapterStatus.adapterConnected">
-        <n-alert type="warning" title="适配器未连接" style="margin-bottom: 16px">
-          <template #icon>
-            <n-icon>
-              <HelpCircleOutline />
-            </n-icon>
-          </template>
-          绑定适配器已配置但未连接，部分功能可能无法正常工作。适配器类型：{{ adapterStatus.adapterInfo?.type }}
-        </n-alert>
-      </template>
+    <div class="binding-config">
+      <n-grid :cols="isMobile ? 1 : 2" :x-gap="20" :y-gap="20" responsive="screen" item-responsive class="dense-grid">
+        <!-- 基础设置卡片 -->
+        <n-gi>
+          <n-card title="基础设置" size="small" class="config-card">
+            <template #header-extra>
+              <n-tag size="small" type="primary" round>必填信息</n-tag>
+            </template>
+            <n-form v-if="form" :model="form" label-placement="top" :label-width="isMobile ? undefined : '120px'">
+              <n-form-item label="绑定数量">
+                <n-input-number
+                  v-model:value="form.maxBindCount"
+                  min="1"
+                  max="10"
+                  class="number-input"
+                  placeholder="每个社交账号最多可绑定的游戏账号数量，范围1-10"
+                />
+              </n-form-item>
+              <n-form-item label="验证码长度">
+                <n-input-number
+                  v-model:value="form.codeLength"
+                  min="4"
+                  max="12"
+                  class="number-input"
+                  placeholder="生成的验证码字符数量，影响验证码复杂度，4-12位"
+                />
+              </n-form-item>
+              <n-form-item label="有效时间">
+                <n-input-number
+                  v-model:value="form.codeExpire"
+                  min="1"
+                  max="60"
+                  class="number-input"
+                  placeholder="验证码有效时间，超时需重新生成，1-60分钟"
+                >
+                  <template #suffix>分钟</template>
+                </n-input-number>
+              </n-form-item>
+              <n-form-item label="生成模式">
+                <n-input-group style="flex: 1">
+                  <n-select
+                    v-model:value="form.codeMode"
+                    :options="codeModeOptions"
+                    style="flex: 1"
+                    placeholder="选择验证码字符组成方式"
+                    @update:value="previewCode"
+                  />
+                  <n-tooltip trigger="click" placement="top">
+                    <template #trigger>
+                      <n-button style="border-radius: 0 6px 6px 0" class="preview-button" @click.stop="previewCode"
+                        >预览</n-button
+                      >
+                    </template>
+                    <span style="font-size: 15px; letter-spacing: 2px">{{ previewedCode }}</span>
+                  </n-tooltip>
+                </n-input-group>
+              </n-form-item>
+              <n-form-item label="绑定前缀">
+                <n-input
+                  v-model:value="form.prefix"
+                  placeholder="如：/绑定 ，用于绑定账号的指令前缀"
+                  @update:value="validatePrefixes"
+                />
+              </n-form-item>
+              <n-form-item label="解绑前缀">
+                <n-input
+                  v-model:value="form.unbindPrefix"
+                  placeholder="如：/解绑 ，用于解绑账号的专用指令前缀，留空则用绑定前缀+玩家名"
+                  @update:value="validatePrefixes"
+                />
+              </n-form-item>
+              <n-form-item label="允许解绑">
+                <div class="switch-wrapper">
+                  <n-switch v-model:value="form.allowUnbind" />
+                </div>
+              </n-form-item>
+              <n-alert v-if="prefixValidationError" type="error" size="small" style="margin-top: 8px">
+                {{ prefixValidationError }}
+              </n-alert>
+            </n-form>
+          </n-card>
+          <n-card title="高级设置" size="small" class="config-card">
+            <template #header-extra>
+              <n-tag size="small" type="warning" round>可选</n-tag>
+            </template>
+            <n-form v-if="form" :model="form" label-placement="top" :label-width="isMobile ? undefined : '120px'">
+              <n-form-item label="强制绑定">
+                <div class="switch-wrapper">
+                  <n-switch v-model:value="form.forceBind" />
+                </div>
+              </n-form-item>
+              <n-form-item label="未绑定踢出消息">
+                <n-input
+                  v-model:value="form.kickMsg"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="当玩家未绑定社交账号时显示的踢出消息，支持颜色代码"
+                />
+              </n-form-item>
+              <n-form-item label="解绑踢出消息">
+                <n-input
+                  v-model:value="form.unbindKickMsg"
+                  type="textarea"
+                  :rows="2"
+                  placeholder="当玩家的社交账号被解绑时显示的踢出消息"
+                />
+              </n-form-item>
+            </n-form>
+          </n-card>
+        </n-gi>
 
-      <template v-if="loading">
-        <n-skeleton :height="40" :width="180" style="margin-bottom: 16px" />
-        <div v-for="i in 3" :key="i">
-          <n-skeleton :height="32" :width="'100%'" style="margin-bottom: 12px" />
-        </div>
-        <div v-for="i in 2" :key="'b' + i">
-          <n-skeleton :height="32" :width="'100%'" style="margin-bottom: 12px" />
-        </div>
-        <n-skeleton :height="120" :width="'100%'" style="margin-bottom: 12px" />
-      </template>
-      <template v-else>
-        <div :class="{ 'disabled-content': !adapterStatus?.hasAdapter }">
-          <n-tabs v-model:value="activeTab" type="line" animated>
-            <n-tab-pane name="basic" tab="基础设置">
-              <div class="form-grid">
-                <n-form v-if="form" :model="form" label-placement="top" class="form-section">
-                  <n-grid :cols="isMobile ? 1 : '1 s:2 m:3 l:3'" responsive="screen" :x-gap="16" :y-gap="16">
-                    <n-gi>
-                      <n-form-item>
-                        <template #label>
-                          <span class="label-with-tooltip">
-                            绑定数量
-                            <n-tooltip trigger="hover">
-                              <template #trigger>
-                                <n-icon size="14" class="help-icon">
-                                  <HelpCircleOutline />
-                                </n-icon>
-                              </template>
-                              每个社交账号最多可以绑定的游戏账号数量
-                            </n-tooltip>
-                          </span>
-                        </template>
-                        <n-input-number v-model:value="form.maxBindCount" min="1" max="10" class="number-input" />
-                      </n-form-item>
-                    </n-gi>
-                    <n-gi>
-                      <n-form-item>
-                        <template #label>
-                          <span class="label-with-tooltip">
-                            验证码长度
-                            <n-tooltip trigger="hover">
-                              <template #trigger>
-                                <n-icon size="14" class="help-icon">
-                                  <HelpCircleOutline />
-                                </n-icon>
-                              </template>
-                              生成的验证码字符数量，影响验证码复杂度
-                            </n-tooltip>
-                          </span>
-                        </template>
-                        <n-input-number v-model:value="form.codeLength" min="4" max="12" class="number-input" />
-                      </n-form-item>
-                    </n-gi>
-                    <n-gi>
-                      <n-form-item>
-                        <template #label>
-                          <span class="label-with-tooltip">
-                            有效时间
-                            <n-tooltip trigger="hover">
-                              <template #trigger>
-                                <n-icon size="14" class="help-icon">
-                                  <HelpCircleOutline />
-                                </n-icon>
-                              </template>
-                              验证码的有效时间，单位为分钟，超时后需重新生成
-                            </n-tooltip>
-                          </span>
-                        </template>
-                        <n-input-number v-model:value="form.codeExpire" min="1" max="60" class="number-input">
-                          <template #suffix>分钟</template>
-                        </n-input-number>
-                      </n-form-item>
-                    </n-gi>
-                  </n-grid>
+        <!-- 反馈消息卡片 -->
+        <n-gi>
+          <n-card title="反馈消息配置" size="small" class="config-card">
+            <n-form v-if="form" :model="form" label-placement="top" :label-width="isMobile ? undefined : '120px'">
+              <n-form-item label="绑定成功">
+                <n-input v-model:value="form.bindSuccessMsg" placeholder="绑定成功时的反馈消息，支持#user占位符" />
+              </n-form-item>
+              <n-form-item label="绑定失败">
+                <n-input v-model:value="form.bindFailMsg" placeholder="绑定失败时的反馈消息" />
+              </n-form-item>
+              <n-form-item label="解绑成功">
+                <n-input v-model:value="form.unbindSuccessMsg" placeholder="解绑成功时的反馈消息，支持#user占位符" />
+              </n-form-item>
+              <n-form-item label="解绑失败">
+                <n-input v-model:value="form.unbindFailMsg" placeholder="解绑失败时的反馈消息" />
+              </n-form-item>
+            </n-form>
+          </n-card>
 
-                  <!-- 验证码生成模式和前缀设置 -->
-                  <n-grid :cols="isMobile ? 1 : '1 s:1 m:2 l:2'" responsive="screen" :x-gap="16" :y-gap="16">
-                    <n-gi span="1 s:1 m:2 l:2">
-                      <n-form-item>
-                        <template #label>
-                          <span class="label-with-tooltip">
-                            生成模式
-                            <n-tooltip trigger="hover">
-                              <template #trigger>
-                                <n-icon size="14" class="help-icon">
-                                  <HelpCircleOutline />
-                                </n-icon>
-                              </template>
-                              验证码的字符组成方式，决定验证码的字符类型和复杂度
-                            </n-tooltip>
-                          </span>
-                        </template>
-                        <n-input-group style="flex: 1">
-                          <n-select
-                            v-model:value="form.codeMode"
-                            :options="codeModeOptions"
-                            style="flex: 1"
-                            @update:value="previewCode"
-                          />
-                          <n-tooltip trigger="click" placement="top">
-                            <template #trigger>
-                              <n-button
-                                style="border-radius: 0 6px 6px 0"
-                                class="preview-button"
-                                @click.stop="previewCode"
-                                >预览</n-button
-                              >
-                            </template>
-                            <span style="font-size: 15px; letter-spacing: 2px">{{ previewedCode }}</span>
-                          </n-tooltip>
-                        </n-input-group>
-                      </n-form-item>
-                    </n-gi>
-                  </n-grid>
-
-                  <!-- 前缀配置 -->
-                  <n-grid :cols="isMobile ? 1 : '1 s:2 m:2 l:2'" responsive="screen" :x-gap="16" :y-gap="16">
-                    <n-gi>
-                      <n-form-item>
-                        <template #label>
-                          <span class="label-with-tooltip">
-                            绑定前缀
-                            <n-tooltip trigger="hover">
-                              <template #trigger>
-                                <n-icon size="14" class="help-icon">
-                                  <HelpCircleOutline />
-                                </n-icon>
-                              </template>
-                              用户绑定游戏账号时使用的指令前缀
-                            </n-tooltip>
-                          </span>
-                        </template>
-                        <n-input
-                          v-model:value="form.prefix"
-                          placeholder="如：/绑定 "
-                          @update:value="validatePrefixes"
-                        />
-                      </n-form-item>
-                    </n-gi>
-                    <n-gi>
-                      <n-form-item>
-                        <template #label>
-                          <span class="label-with-tooltip">
-                            解绑前缀
-                            <n-tooltip trigger="hover">
-                              <template #trigger>
-                                <n-icon size="14" class="help-icon">
-                                  <HelpCircleOutline />
-                                </n-icon>
-                              </template>
-                              用户解绑游戏账号时使用的专用指令前缀，留空则使用绑定前缀+玩家名的方式解绑
-                            </n-tooltip>
-                          </span>
-                        </template>
-                        <n-input
-                          v-model:value="form.unbindPrefix"
-                          placeholder="如：/解绑 "
-                          @update:value="validatePrefixes"
-                        />
-                      </n-form-item>
-                    </n-gi>
-                  </n-grid>
-
-                  <!-- 前缀校验错误提示 -->
-                  <n-alert v-if="prefixValidationError" type="error" size="small" style="margin-top: 8px">
-                    {{ prefixValidationError }}
-                  </n-alert>
-
-                  <!-- 解绑开关设置 -->
-                  <n-grid :cols="isMobile ? 1 : '1 s:2 m:2 l:2'" responsive="screen" :x-gap="16" :y-gap="16">
-                    <n-gi>
-                      <n-form-item>
-                        <template #label>
-                          <span class="label-with-tooltip">
-                            允许解绑
-                            <n-tooltip trigger="hover">
-                              <template #trigger>
-                                <n-icon size="14" class="help-icon">
-                                  <HelpCircleOutline />
-                                </n-icon>
-                              </template>
-                              是否允许用户主动解除账号绑定关系
-                            </n-tooltip>
-                          </span>
-                        </template>
-                        <div class="switch-wrapper">
-                          <n-switch v-model:value="form.allowUnbind" />
-                        </div>
-                      </n-form-item>
-                    </n-gi>
-                  </n-grid>
-                </n-form>
+          <n-card title="指令与反馈示例" size="small" class="config-card">
+            <div class="examples-section">
+              <div class="examples-header">
+                <span>指令示例预览</span>
+                <n-icon size="18" class="examples-icon">
+                  <SearchOutline />
+                </n-icon>
               </div>
-              <n-divider class="section-divider" />
-              <div class="examples-section">
-                <n-card size="small" class="examples-card">
-                  <template #header>
-                    <div class="examples-header">
-                      <n-icon size="18" class="examples-icon">
-                        <SearchOutline />
-                      </n-icon>
-                      <span>指令示例预览</span>
-                    </div>
-                  </template>
-
-                  <div class="examples-grid">
-                    <!-- 绑定指令示例 -->
-                    <div class="example-item">
-                      <div class="example-label">
-                        <n-tag type="primary" size="small" round>绑定指令</n-tag>
-                      </div>
-                      <div class="command-demo">
-                        <n-code :code="bindCommandExample" language="text" class="command-code" />
-                        <n-button
-                          class="copy-btn"
-                          size="tiny"
-                          quaternary
-                          circle
-                          @click="copyToClipboard(bindCommandExample)"
-                        >
-                          <template #icon>
-                            <n-icon>
-                              <CopyOutline />
-                            </n-icon>
-                          </template>
-                        </n-button>
-                      </div>
-                      <div class="example-desc center-desc">
-                        <n-text depth="3" size="small" class="desc-with-tooltip"> 群聊绑定指令 </n-text>
-                        <n-tooltip trigger="hover">
-                          <template #trigger>
-                            <n-icon size="12">
-                              <HelpCircleOutline />
-                            </n-icon>
-                          </template>
-                          用户在QQ群或其他社交平台聊天中发送此指令来绑定游戏账号
-                        </n-tooltip>
-                      </div>
-                    </div>
-
-                    <!-- 解绑指令示例 -->
-                    <div v-if="form && form.allowUnbind" class="example-item">
-                      <div class="example-label">
-                        <n-tag type="warning" size="small" round>解绑指令</n-tag>
-                      </div>
-                      <div class="command-demo">
-                        <n-code :code="unbindCommandExample" language="text" class="command-code" />
-                        <n-button
-                          class="copy-btn"
-                          size="tiny"
-                          quaternary
-                          circle
-                          @click="copyToClipboard(unbindCommandExample)"
-                        >
-                          <template #icon>
-                            <n-icon>
-                              <CopyOutline />
-                            </n-icon>
-                          </template>
-                        </n-button>
-                      </div>
-                      <div class="example-desc">
-                        <n-text depth="3" size="small" class="desc-with-tooltip"> 群聊解绑指令 </n-text>
-                        <n-tooltip trigger="hover">
-                          <template #trigger>
-                            <n-icon size="12">
-                              <HelpCircleOutline />
-                            </n-icon>
-                          </template>
-                          <div v-if="form && form.unbindPrefix && form.unbindPrefix.trim()">
-                            使用专用解绑前缀进行解绑操作，直接输入玩家名称即可
-                          </div>
-                          <div v-else>使用绑定前缀+玩家名称的方式进行解绑操作</div>
-                        </n-tooltip>
-                      </div>
-                    </div>
-
-                    <!-- 成功反馈示例 -->
-                    <div class="example-item response-example">
-                      <div class="example-label">
-                        <n-tag type="success" size="small" round>成功反馈</n-tag>
-                      </div>
-                      <div class="response-demo">
-                        <n-alert type="success" size="small" class="response-alert">
-                          <template #icon>
-                            <n-icon>
-                              <CheckmarkCircleOutline />
-                            </n-icon>
-                          </template>
-                          {{ successMessageExample }}
-                        </n-alert>
-                      </div>
-                    </div>
+              <div class="examples-grid">
+                <div class="example-item">
+                  <div class="example-label">
+                    <n-tag type="primary" size="small" round>绑定指令</n-tag>
                   </div>
-                </n-card>
-              </div>
-            </n-tab-pane>
-            <n-tab-pane name="advanced" tab="高级设置">
-              <div class="form-grid">
-                <n-form v-if="form" :model="form" label-placement="top" class="form-section">
-                  <!-- 强制绑定开关 -->
-                  <n-grid cols="1" :x-gap="16" :y-gap="16">
-                    <n-gi>
-                      <n-form-item>
-                        <template #label>
-                          <span class="label-with-tooltip">
-                            强制绑定
-                            <n-tooltip trigger="hover">
-                              <template #trigger>
-                                <n-icon size="14" class="help-icon">
-                                  <HelpCircleOutline />
-                                </n-icon>
-                              </template>
-                              开启后，未绑定社交账号的玩家将被踢出服务器
-                            </n-tooltip>
-                          </span>
-                        </template>
-                        <div class="switch-wrapper">
-                          <n-switch v-model:value="form.forceBind" />
-                        </div>
-                      </n-form-item>
-                    </n-gi>
-                  </n-grid>
-
-                  <!-- 踢出消息设置 -->
-                  <n-space vertical size="large">
-                    <n-form-item>
-                      <template #label>
-                        <span class="label-with-tooltip">
-                          未绑定踢出消息
-                          <n-tooltip trigger="hover">
-                            <template #trigger>
-                              <n-icon size="14" class="help-icon">
-                                <HelpCircleOutline />
-                              </n-icon>
-                            </template>
-                            当玩家未绑定社交账号时显示的踢出消息（支持颜色代码）
-                          </n-tooltip>
-                        </span>
+                  <div class="command-demo">
+                    <n-code :code="bindCommandExample" language="text" class="command-code" />
+                    <n-button
+                      class="copy-btn"
+                      size="tiny"
+                      quaternary
+                      circle
+                      @click="copyToClipboard(bindCommandExample)"
+                    >
+                      <template #icon>
+                        <n-icon>
+                          <CopyOutline />
+                        </n-icon>
                       </template>
-                      <n-input v-model:value="form.kickMsg" type="textarea" :rows="5" />
-                    </n-form-item>
-
-                    <n-form-item>
-                      <template #label>
-                        <span class="label-with-tooltip">
-                          解绑踢出消息
-                          <n-tooltip trigger="hover">
-                            <template #trigger>
-                              <n-icon size="14" class="help-icon">
-                                <HelpCircleOutline />
-                              </n-icon>
-                            </template>
-                            当玩家的社交账号被解绑时显示的踢出消息
-                          </n-tooltip>
-                        </span>
+                    </n-button>
+                  </div>
+                  <div class="example-desc center-desc">
+                    <n-text depth="3" size="small" class="desc-with-tooltip"> 群聊绑定指令 </n-text>
+                    <n-tooltip trigger="hover">
+                      <template #trigger>
+                        <n-icon size="12">
+                          <HelpCircleOutline />
+                        </n-icon>
                       </template>
-                      <n-input v-model:value="form.unbindKickMsg" type="textarea" :rows="3" />
-                    </n-form-item>
-                  </n-space>
-                </n-form>
+                      用户在QQ群或其他社交平台聊天中发送此指令来绑定游戏账号
+                    </n-tooltip>
+                  </div>
+                </div>
+                <div v-if="form && form.allowUnbind" class="example-item">
+                  <div class="example-label">
+                    <n-tag type="warning" size="small" round>解绑指令</n-tag>
+                  </div>
+                  <div class="command-demo">
+                    <n-code :code="unbindCommandExample" language="text" class="command-code" />
+                    <n-button
+                      class="copy-btn"
+                      size="tiny"
+                      quaternary
+                      circle
+                      @click="copyToClipboard(unbindCommandExample)"
+                    >
+                      <template #icon>
+                        <n-icon>
+                          <CopyOutline />
+                        </n-icon>
+                      </template>
+                    </n-button>
+                  </div>
+                  <div class="example-desc">
+                    <n-text depth="3" size="small" class="desc-with-tooltip"> 群聊解绑指令 </n-text>
+                    <n-tooltip trigger="hover">
+                      <template #trigger>
+                        <n-icon size="12">
+                          <HelpCircleOutline />
+                        </n-icon>
+                      </template>
+                      <div v-if="form && form.unbindPrefix && form.unbindPrefix.trim()">
+                        使用专用解绑前缀进行解绑操作，直接输入玩家名称即可
+                      </div>
+                      <div v-else>使用绑定前缀+玩家名称的方式进行解绑操作</div>
+                    </n-tooltip>
+                  </div>
+                </div>
+                <div class="example-item response-example">
+                  <div class="example-label">
+                    <n-tag type="success" size="small" round>成功反馈</n-tag>
+                  </div>
+                  <div class="response-demo">
+                    <n-alert type="success" size="small" class="response-alert">
+                      <template #icon>
+                        <n-icon>
+                          <CheckmarkCircleOutline />
+                        </n-icon>
+                      </template>
+                      {{ successMessageExample }}
+                    </n-alert>
+                  </div>
+                </div>
               </div>
-            </n-tab-pane>
-            <n-tab-pane name="messages" tab="反馈消息配置">
-              <div class="form-grid">
-                <n-form v-if="form" :model="form" label-placement="top" class="form-section">
-                  <!-- 绑定相关消息 -->
-                  <n-grid :cols="isMobile ? 1 : '1 s:2 m:2 l:2'" responsive="screen" :x-gap="16" :y-gap="16">
-                    <n-gi>
-                      <n-form-item label="绑定成功">
-                        <n-input v-model:value="form.bindSuccessMsg" />
-                      </n-form-item>
-                    </n-gi>
-                    <n-gi>
-                      <n-form-item label="绑定失败">
-                        <n-input v-model:value="form.bindFailMsg" />
-                      </n-form-item>
-                    </n-gi>
-                  </n-grid>
+            </div>
+          </n-card>
+        </n-gi>
 
-                  <!-- 解绑相关消息 -->
-                  <n-grid cols="1 s:2 m:2 l:2" responsive="screen" :x-gap="16" :y-gap="16">
-                    <n-gi>
-                      <n-form-item label="解绑成功">
-                        <n-input v-model:value="form.unbindSuccessMsg" />
-                      </n-form-item>
-                    </n-gi>
-                    <n-gi>
-                      <n-form-item label="解绑失败">
-                        <n-input v-model:value="form.unbindFailMsg" />
-                      </n-form-item>
-                    </n-gi>
-                  </n-grid>
-                </n-form>
-              </div>
-            </n-tab-pane>
-          </n-tabs>
-        </div>
-        <!-- 保存按钮 -->
-        <n-divider />
-        <div class="save-section">
-          <n-space justify="end">
-            <n-button type="primary" size="medium" :disabled="!canSaveConfig" :loading="loading" @click="saveBinding">
-              保存配置
+        <!-- 保存按钮区域 - 跨列显示 -->
+        <n-gi :span="isMobile ? 1 : 2">
+          <n-divider />
+          <div class="save-section">
+            <n-button
+              type="primary"
+              size="large"
+              class="save-button"
+              :loading="loading"
+              :block="isMobile"
+              :disabled="!canSaveConfig"
+              @click="saveBinding"
+            >
+              <template #icon>
+                <n-icon>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                      d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z"
+                    />
+                  </svg>
+                </n-icon>
+              </template>
+              {{ loading ? '保存中...' : '保存配置' }}
             </n-button>
-          </n-space>
-        </div>
-      </template>
-    </n-card>
+          </div>
+        </n-gi>
+      </n-grid>
+    </div>
   </ServerPageWrapper>
 </template>
 
@@ -482,6 +315,15 @@ const form = ref<ServerBindingConfig>();
 const initialForm = ref<ServerBindingConfig | undefined>();
 const loading = ref(true);
 
+// 添加浏览器刷新/关闭前的确认提示
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (isDirty.value) {
+    e.preventDefault();
+    e.returnValue = '您有未保存的更改，确定要离开此页面吗？';
+    return '您有未保存的更改，确定要离开此页面吗？';
+  }
+};
+
 onMounted(async () => {
   // 注册页面状态到 layout
   if (registerPageState) {
@@ -490,6 +332,9 @@ onMounted(async () => {
       save: saveBinding
     });
   }
+
+  // 注册浏览器关闭前的确认提示
+  window.addEventListener('beforeunload', handleBeforeUnload);
 
   loading.value = true;
   try {
@@ -508,6 +353,9 @@ onMounted(async () => {
 
 // 组件卸载时清理状态
 onUnmounted(() => {
+  // 移除浏览器关闭前的确认提示
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+
   if (clearPageState) {
     clearPageState();
   }
@@ -560,10 +408,8 @@ const successMessageExample = computed(() => {
 
 // 是否可以保存配置
 const canSaveConfig = computed(() => {
-  return adapterStatus.value?.hasAdapter && !prefixValidationError.value;
+  return adapterStatus.value?.hasAdapter && !prefixValidationError.value && isDirty.value;
 });
-
-const activeTab = ref('basic');
 
 // 前缀校验
 const prefixValidationError = ref('');
@@ -582,11 +428,6 @@ function validatePrefixes() {
 
   prefixValidationError.value = '';
   return true;
-}
-
-// 导航到基础设置页面
-function navigateToGeneral() {
-  navigateTo(`/servers/${serverId.value}/general`);
 }
 
 const codeModeOptions = [
@@ -648,6 +489,16 @@ async function copyToClipboard(text: string) {
   }
 }
 
+// 放弃更改
+function discardChanges() {
+  if (!initialForm.value) return;
+
+  message.info('已放弃未保存的更改');
+  form.value = { ...initialForm.value };
+  validatePrefixes();
+  previewCode();
+}
+
 // 保存绑定配置
 async function saveBinding(): Promise<void> {
   if (!form.value) return;
@@ -684,142 +535,211 @@ async function saveBinding(): Promise<void> {
 </script>
 
 <style scoped lang="less">
-.binding-config-card {
-  :deep(.n-card__content) {
-    padding: 16px;
-  }
-}
-
 .disabled-content {
   opacity: 0.6;
   pointer-events: none;
   filter: grayscale(20%);
 }
-
 .save-section {
   margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  background: var(--card-color);
+  border-radius: 8px;
 }
-
 .form-grid {
   max-width: 100%;
 }
-
 .number-input {
   width: 100%;
 }
-
 .switch-wrapper {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 34px; // 与其他输入框高度对齐
+  height: 34px;
 }
-
 .label-with-tooltip,
 .desc-with-tooltip {
   display: flex;
   align-items: center;
   gap: 4px;
   cursor: help;
-
   .help-icon {
     color: var(--text-color-3);
     opacity: 0.6;
     transition: opacity 0.2s ease;
-
     &:hover {
       opacity: 1;
     }
   }
 }
-
 .center-desc {
   display: flex;
   align-items: center;
   gap: 4px;
 }
-
 .section-divider {
   margin: 24px 0 16px 0;
 }
-
 .examples-section {
-  .examples-card {
-    .examples-header {
+  .examples-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-weight: 500;
+    .examples-icon {
+      color: var(--primary-color);
+    }
+  }
+  .examples-grid {
+    display: grid;
+    gap: 16px;
+  }
+  .example-item {
+    .example-label {
+      margin-bottom: 8px;
+    }
+    .command-demo {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-weight: 500;
-
-      .examples-icon {
-        color: var(--primary-color);
+      margin-bottom: 6px;
+      .command-code {
+        flex: 1;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        background-color: var(--code-color);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+      }
+      .copy-btn {
+        flex-shrink: 0;
+        opacity: 0.6;
+        transition: opacity 0.2s ease;
+        &:hover {
+          opacity: 1;
+        }
       }
     }
-
-    .examples-grid {
-      display: grid;
-      gap: 16px;
+    .example-desc {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding-left: 4px;
     }
-
-    .example-item {
-      .example-label {
-        margin-bottom: 8px;
-      }
-
-      .command-demo {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 6px;
-
-        .command-code {
-          flex: 1;
-          font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-          background-color: var(--code-color);
-          border: 1px solid var(--border-color);
-          border-radius: 6px;
-          padding: 8px 12px;
+    &.response-example {
+      .response-demo {
+        .response-alert {
           font-size: 13px;
-          font-weight: 500;
-          letter-spacing: 0.5px;
-
-          :deep(.n-code) {
-            background: transparent !important;
-            padding: 0 !important;
-            border-radius: 0 !important;
-          }
-        }
-
-        .copy-btn {
-          flex-shrink: 0;
-          opacity: 0.6;
-          transition: opacity 0.2s ease;
-
-          &:hover {
-            opacity: 1;
-          }
         }
       }
+    }
+  }
+}
 
-      .example-desc {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        padding-left: 4px;
+/* 完善样式，采用与 GeneralConfig.vue 相同的布局风格 */
+.unsaved-alert {
+  margin-bottom: 16px;
+
+  .unsaved-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+
+    .unsaved-text {
+      font-weight: 500;
+    }
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+    }
+  }
+}
+
+.binding-config {
+  /* 网格容器优化 */
+  .dense-grid {
+    /* 卡片高度自适应 */
+    .config-card {
+      // 底部留白
+      margin-bottom: 16px;
+    }
+  }
+
+  .save-section {
+    display: flex;
+    justify-content: flex-end;
+    padding: 16px 0;
+    background: var(--card-color);
+
+    .save-button {
+      min-width: 120px;
+      border-radius: 3px;
+      transition: all 0.3s ease;
+
+      &:not(:disabled):hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(24, 160, 88, 0.3);
       }
+    }
+  }
+}
 
-      &.response-example {
-        .response-demo {
-          .response-alert {
-            font-size: 13px;
-
-            :deep(.n-alert__content) {
-              font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-              font-weight: 500;
-            }
-          }
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .binding-config {
+    /* 移动端使用单列布局 */
+    .dense-grid {
+      .n-gi {
+        .config-card {
+          border-radius: 8px;
         }
       }
+    }
+
+    .save-section {
+      padding: 12px;
+
+      .save-button {
+        min-width: 120px;
+      }
+    }
+
+    .n-form-item {
+      margin-bottom: 16px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .binding-config {
+    .dense-grid {
+      .n-gi {
+        .config-card {
+          border-radius: 6px;
+        }
+      }
+    }
+
+    .save-section {
+      padding: 10px;
+
+      .save-button {
+        min-width: 100px;
+        font-size: 13px;
+      }
+    }
+
+    .n-form-item {
+      margin-bottom: 12px;
     }
   }
 }
