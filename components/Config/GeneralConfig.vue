@@ -40,18 +40,18 @@
         </n-space>
       </n-card>
 
-      <!-- 新增：适配器选择 -->
-      <n-card title="适配器绑定" size="small">
+      <n-card title="Bot 实例绑定" size="small">
         <n-space vertical size="medium">
-          <!-- 适配器状态提示 -->
           <template v-if="adapterStatus">
             <n-alert v-if="!adapterStatus.hasAdapter" type="info" size="small">
-              未配置适配器，某些功能（如账号绑定）将无法使用
+              未配置 Bot 实例，某些功能（如账号绑定）将无法使用
             </n-alert>
             <n-alert v-else-if="!adapterStatus.adapterConnected" type="warning" size="small">
-              适配器已配置但未连接 ({{ adapterStatus.adapterInfo?.type }})
+              Bot 实例已配置但未连接 ({{ adapterStatus.adapterInfo?.type }})
             </n-alert>
-            <n-alert v-else type="success" size="small"> 适配器已连接 ({{ adapterStatus.adapterInfo?.type }}) </n-alert>
+            <n-alert v-else type="success" size="small">
+              Bot 实例已连接 ({{ adapterStatus.adapterInfo?.type }})
+            </n-alert>
           </template>
 
           <n-form
@@ -59,15 +59,15 @@
             :label-placement="isMobile ? 'top' : 'left'"
             :label-width="isMobile ? undefined : '120px'"
           >
-            <n-form-item label="适配器">
+            <n-form-item label="Bot 实例">
               <n-select
                 v-model:value="generalConfig.adapter_id"
-                :options="adapterOptions"
-                placeholder="请选择要绑定的适配器"
+                :options="botOptions"
+                placeholder="请选择要绑定的 Bot 实例"
                 clearable
                 @update:value="onAdapterChange"
               />
-              <template #feedback> 适配器用于连接外部平台（如QQ机器人），实现账号绑定等功能 </template>
+              <template #feedback> Bot 实例用于连接外部平台（如QQ机器人），实现账号绑定等功能 </template>
             </n-form-item>
           </n-form>
         </n-space>
@@ -120,11 +120,11 @@ const generalConfig = ref({
 const serverStatus = ref<ServerWithStatus | null>(null);
 const saving = ref(false);
 
-// 适配器选项
-const adapterOptions = ref<{ label: string; value: number }[]>([]);
+// Bot 实例选项
+const botOptions = ref<{ label: string; value: number }[]>([]);
 
-// 获取适配器标签
-function getAdapterLabel(adapter: AdapterUnionType): string {
+// 获取 Bot 实例标签
+function getBotLabel(adapter: AdapterUnionType): string {
   if (isOnebotAdapter(adapter)) {
     return `OneBot ${adapter.detail?.botId || adapter.id}`;
   }
@@ -134,21 +134,21 @@ function getAdapterLabel(adapter: AdapterUnionType): string {
   return `${adapter.type} ${adapter.id}`;
 }
 
-// 获取适配器列表
-const fetchAdapterOptions = () => {
+// 获取 Bot 实例列表
+const fetchBotOptions = () => {
   useRequest(adapterApi.getAdapters()).onSuccess(({ data }) => {
     if (data.success && data.data) {
-      adapterOptions.value = data.data.map((adapter) => ({
-        label: getAdapterLabel(adapter),
+      botOptions.value = data.data.map((adapter) => ({
+        label: getBotLabel(adapter),
         value: adapter.id
       }));
     }
   });
 };
 
-// 适配器变更时的处理
+// Bot 实例变更时的处理
 const onAdapterChange = () => {
-  // 延迟更新适配器状态，给后端时间处理
+  // 延迟更新 Bot 实例状态，给后端时间处理
   setTimeout(() => {
     fetchAdapterStatus();
   }, 500);
@@ -185,7 +185,7 @@ const saveGeneralConfig = () => {
     .onSuccess(({ data }) => {
       if (data.success) {
         message.success('基本配置保存成功');
-        // 保存成功后刷新适配器状态
+        // 保存成功后刷新 Bot 实例状态
         fetchAdapterStatus();
       } else {
         message.error(data.message || '保存基本配置失败');
@@ -202,7 +202,7 @@ const saveGeneralConfig = () => {
 
 onMounted(() => {
   fetchGeneralConfig();
-  fetchAdapterOptions();
+  fetchBotOptions();
   fetchAdapterStatus();
 });
 </script>
