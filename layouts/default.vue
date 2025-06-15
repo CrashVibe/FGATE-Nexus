@@ -2,10 +2,16 @@
   <n-layout class="layout" bordered>
     <!-- 顶部导航栏 -->
     <n-layout-header bordered>
-      <n-space justify="space-between" align="center" style="height: 100%">
-        <n-space align="center" style="align-items: center">
-          <n-avatar size="small" :src="'/favicon.ico'" style="width: 24px; height: 24px" />
-          <n-text strong>服务器管理系统</n-text>
+      <n-space justify="space-between" align="start" style="height: 100%">
+        <n-space align="start" style="gap: 8px">
+          <n-image
+            width="24"
+            height="24"
+            :src="'/favicon.ico'"
+            preview-disabled
+            style="border-radius: 50%; vertical-align: middle; display: inline-block"
+          />
+          <n-text strong style="vertical-align: middle; display: inline-block; line-height: 24px">FGate</n-text>
         </n-space>
 
         <n-space align="center">
