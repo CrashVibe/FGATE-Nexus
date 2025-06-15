@@ -1,26 +1,28 @@
 <template>
   <div class="general-config">
     <!-- 未保存提示条 -->
-    <n-alert v-if="isDirty" type="warning" class="unsaved-alert" closable show-icon>
-      <template #icon>
-        <n-icon>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fill-rule="evenodd"
-              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-              clip-rule="evenodd"
-            />
-          </svg>
-        </n-icon>
-      </template>
-      <div class="unsaved-content">
-        <div class="unsaved-text">您有未保存的更改</div>
-        <n-space size="small">
-          <n-button size="small" type="primary" :loading="saving" @click="saveGeneralConfig"> 保存更改 </n-button>
-          <n-button size="small" quaternary @click="discardChanges"> 放弃更改 </n-button>
-        </n-space>
-      </div>
-    </n-alert>
+    <Transition name="alert-slide" mode="out-in">
+      <n-alert v-if="isDirty" type="warning" class="unsaved-alert" closable show-icon>
+        <template #icon>
+          <n-icon>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fill-rule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </n-icon>
+        </template>
+        <div class="unsaved-content">
+          <div class="unsaved-text">您有未保存的更改</div>
+          <n-space size="small">
+            <n-button size="small" type="primary" :loading="saving" @click="saveGeneralConfig"> 保存更改 </n-button>
+            <n-button size="small" quaternary @click="discardChanges"> 放弃更改 </n-button>
+          </n-space>
+        </div>
+      </n-alert>
+    </Transition>
 
     <!-- 使用统一的Grid响应式布局 -->
     <n-grid :cols="isMobile ? 1 : 2" :x-gap="20" :y-gap="20" responsive="screen">
@@ -64,7 +66,7 @@
 
       <!-- 服务器状态卡片 -->
       <n-grid-item>
-        <n-card title="服务器状态" size="small" class="config-card status-card">
+        <n-card title="服务器状态" size="small" class="config-card status-card" style="margin-bottom: 20px">
           <template #header-extra>
             <n-tag :type="serverStatus?.isOnline ? 'success' : 'error'" size="small" round>
               {{ serverStatus?.isOnline ? '在线' : '离线' }}
@@ -138,10 +140,7 @@
             </div>
           </n-space>
         </n-card>
-      </n-grid-item>
-
-      <!-- Bot 实例绑定卡片 -->
-      <n-grid-item>
+        <!-- Bot 实例绑定卡片 -->
         <n-card title="Bot 实例绑定" size="small" class="config-card bot-card">
           <template #header-extra>
             <n-tag
@@ -477,6 +476,36 @@ onUnmounted(() => {
   }
 }
 
+/* Alert 过渡动画 */
+.alert-slide-enter-active,
+.alert-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.alert-slide-enter-from {
+  opacity: 0;
+  transform: translateY(-20px);
+  max-height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.alert-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+  max-height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.alert-slide-enter-to,
+.alert-slide-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 200px;
+  margin-bottom: 16px;
+}
+
 .general-config {
   // Grid布局样式优化
   .n-grid {
@@ -556,7 +585,6 @@ onUnmounted(() => {
     display: flex;
     justify-content: flex-end;
     padding: 16px 0;
-    background: var(--card-color);
 
     .save-button {
       min-width: 120px;
@@ -601,7 +629,6 @@ onUnmounted(() => {
           align-items: flex-start;
           gap: 8px;
           padding: 12px;
-          background: var(--code-color);
           border-radius: 8px;
           margin-bottom: 8px;
 

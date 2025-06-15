@@ -3,20 +3,22 @@
     <ServerPageHeader title="账号绑定" :server-name="serverName" />
 
     <!-- 未保存提示条（仿 GeneralConfig.vue） -->
-    <n-alert v-if="isDirty" type="warning" class="unsaved-alert" closable show-icon>
-      <template #icon>
-        <n-icon>
-          <HelpCircleOutline />
-        </n-icon>
-      </template>
-      <div class="unsaved-content">
-        <div class="unsaved-text">您有未保存的更改</div>
-        <n-space size="small">
-          <n-button size="small" type="primary" :loading="loading" @click="saveBinding"> 保存更改 </n-button>
-          <n-button size="small" quaternary @click="discardChanges"> 放弃更改 </n-button>
-        </n-space>
-      </div>
-    </n-alert>
+    <Transition name="alert-slide" mode="out-in">
+      <n-alert v-if="isDirty" type="warning" class="unsaved-alert" closable show-icon>
+        <template #icon>
+          <n-icon>
+            <HelpCircleOutline />
+          </n-icon>
+        </template>
+        <div class="unsaved-content">
+          <div class="unsaved-text">您有未保存的更改</div>
+          <n-space size="small">
+            <n-button size="small" type="primary" :loading="loading" @click="saveBinding"> 保存更改 </n-button>
+            <n-button size="small" quaternary @click="discardChanges"> 放弃更改 </n-button>
+          </n-space>
+        </div>
+      </n-alert>
+    </Transition>
 
     <div class="binding-config">
       <n-grid :cols="isMobile ? 1 : 2" :x-gap="20" :y-gap="20" responsive="screen" item-responsive class="dense-grid">
@@ -163,19 +165,6 @@
                   </div>
                   <div class="command-demo">
                     <n-code :code="bindCommandExample" language="text" class="command-code" />
-                    <n-button
-                      class="copy-btn"
-                      size="tiny"
-                      quaternary
-                      circle
-                      @click="copyToClipboard(bindCommandExample)"
-                    >
-                      <template #icon>
-                        <n-icon>
-                          <CopyOutline />
-                        </n-icon>
-                      </template>
-                    </n-button>
                   </div>
                   <div class="example-desc center-desc">
                     <n-text depth="3" size="small" class="desc-with-tooltip"> 群聊绑定指令 </n-text>
@@ -189,41 +178,30 @@
                     </n-tooltip>
                   </div>
                 </div>
-                <div v-if="form && form.allowUnbind" class="example-item">
-                  <div class="example-label">
-                    <n-tag type="warning" size="small" round>解绑指令</n-tag>
+                <Transition name="example-slide" mode="out-in">
+                  <div v-if="form && form.allowUnbind" key="unbind-example" class="example-item">
+                    <div class="example-label">
+                      <n-tag type="warning" size="small" round>解绑指令</n-tag>
+                    </div>
+                    <div class="command-demo">
+                      <n-code :code="unbindCommandExample" language="text" class="command-code" />
+                    </div>
+                    <div class="example-desc">
+                      <n-text depth="3" size="small" class="desc-with-tooltip"> 群聊解绑指令 </n-text>
+                      <n-tooltip trigger="hover">
+                        <template #trigger>
+                          <n-icon size="12">
+                            <HelpCircleOutline />
+                          </n-icon>
+                        </template>
+                        <div v-if="form && form.unbindPrefix && form.unbindPrefix.trim()">
+                          使用专用解绑前缀进行解绑操作，直接输入玩家名称即可
+                        </div>
+                        <div v-else>使用绑定前缀+玩家名称的方式进行解绑操作</div>
+                      </n-tooltip>
+                    </div>
                   </div>
-                  <div class="command-demo">
-                    <n-code :code="unbindCommandExample" language="text" class="command-code" />
-                    <n-button
-                      class="copy-btn"
-                      size="tiny"
-                      quaternary
-                      circle
-                      @click="copyToClipboard(unbindCommandExample)"
-                    >
-                      <template #icon>
-                        <n-icon>
-                          <CopyOutline />
-                        </n-icon>
-                      </template>
-                    </n-button>
-                  </div>
-                  <div class="example-desc">
-                    <n-text depth="3" size="small" class="desc-with-tooltip"> 群聊解绑指令 </n-text>
-                    <n-tooltip trigger="hover">
-                      <template #trigger>
-                        <n-icon size="12">
-                          <HelpCircleOutline />
-                        </n-icon>
-                      </template>
-                      <div v-if="form && form.unbindPrefix && form.unbindPrefix.trim()">
-                        使用专用解绑前缀进行解绑操作，直接输入玩家名称即可
-                      </div>
-                      <div v-else>使用绑定前缀+玩家名称的方式进行解绑操作</div>
-                    </n-tooltip>
-                  </div>
-                </div>
+                </Transition>
                 <div class="example-item response-example">
                   <div class="example-label">
                     <n-tag type="success" size="small" round>成功反馈</n-tag>
@@ -277,7 +255,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, inject, onUnmounted } from 'vue';
-import { CopyOutline, HelpCircleOutline, SearchOutline, CheckmarkCircleOutline } from '@vicons/ionicons5';
+import { HelpCircleOutline, SearchOutline, CheckmarkCircleOutline } from '@vicons/ionicons5';
 import { useBreakpoint, useMemo } from 'vooks';
 import ServerPageWrapper from '~/components/Layout/ServerPageWrapper.vue';
 import ServerPageHeader from '~/components/Layout/ServerPageHeader.vue';
@@ -468,27 +446,6 @@ function previewCode() {
   previewedCode.value = code;
 }
 
-async function copyToClipboard(text: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    message.success('已复制到剪贴板');
-  } catch (err) {
-    console.error('复制失败:', err);
-    // 降级方案：使用传统的复制方法
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    document.body.appendChild(textArea);
-    textArea.select();
-    try {
-      document.execCommand('copy');
-      message.success('已复制到剪贴板');
-    } catch {
-      message.error('复制失败');
-    }
-    document.body.removeChild(textArea);
-  }
-}
-
 // 放弃更改
 function discardChanges() {
   if (!initialForm.value) return;
@@ -662,6 +619,66 @@ async function saveBinding(): Promise<void> {
       align-items: flex-start;
     }
   }
+}
+
+/* Alert 过渡动画 */
+.alert-slide-enter-active,
+.alert-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.alert-slide-enter-from {
+  opacity: 0;
+  transform: translateY(-20px);
+  max-height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.alert-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+  max-height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.alert-slide-enter-to,
+.alert-slide-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 200px;
+  margin-bottom: 16px;
+}
+
+/* 示例项过渡动画 */
+.example-slide-enter-active,
+.example-slide-leave-active {
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.example-slide-enter-from {
+  opacity: 0;
+  transform: translateY(-15px) scale(0.95);
+  max-height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.example-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-15px) scale(0.95);
+  max-height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.example-slide-enter-to,
+.example-slide-leave-from {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  max-height: 150px;
+  margin-bottom: 16px;
 }
 
 .binding-config {
