@@ -28,41 +28,42 @@
             <template #header-extra>
               <n-tag size="small" type="primary" round>必填信息</n-tag>
             </template>
-            <n-form v-if="form" :model="form" label-placement="top" :label-width="isMobile ? undefined : '120px'">
-              <n-form-item label="绑定数量">
+            <n-form v-if="form" :model="form" :rules="bindingFormRules" label-placement="top" :label-width="isMobile ? undefined : '120px'">
+              <n-form-item label="绑定数量" path="maxBindCount">
                 <n-input-number
                   v-model:value="form.maxBindCount"
-                  min="1"
-                  max="10"
+                  :min="BINDING_CONSTRAINTS.maxBindCount.min"
+                  :max="BINDING_CONSTRAINTS.maxBindCount.max"
                   class="number-input"
-                  placeholder="每个社交账号最多可绑定的游戏账号数量，范围1-10"
+                  :placeholder="`每个社交账号最多可绑定的游戏账号数量，范围${BINDING_CONSTRAINTS.maxBindCount.min}-${BINDING_CONSTRAINTS.maxBindCount.max}`"
                 />
               </n-form-item>
-              <n-form-item label="验证码长度">
+              <n-form-item label="验证码长度" path="codeLength">
                 <n-input-number
                   v-model:value="form.codeLength"
-                  min="4"
-                  max="12"
+                  :min="BINDING_CONSTRAINTS.codeLength.min"
+                  :max="BINDING_CONSTRAINTS.codeLength.max"
                   class="number-input"
-                  placeholder="生成的验证码字符数量，影响验证码复杂度，4-12位"
+                  :placeholder="`生成的验证码字符数量，影响验证码复杂度，${BINDING_CONSTRAINTS.codeLength.min}-${BINDING_CONSTRAINTS.codeLength.max}位`"
+                  @update:value="previewCode"
                 />
               </n-form-item>
-              <n-form-item label="有效时间">
+              <n-form-item label="有效时间" path="codeExpire">
                 <n-input-number
                   v-model:value="form.codeExpire"
-                  min="1"
-                  max="60"
+                  :min="BINDING_CONSTRAINTS.codeExpire.min"
+                  :max="BINDING_CONSTRAINTS.codeExpire.max"
                   class="number-input"
-                  placeholder="验证码有效时间，超时需重新生成，1-60分钟"
+                  :placeholder="`验证码有效时间，超时需重新生成，${BINDING_CONSTRAINTS.codeExpire.min}-${BINDING_CONSTRAINTS.codeExpire.max}分钟`"
                 >
                   <template #suffix>分钟</template>
                 </n-input-number>
               </n-form-item>
-              <n-form-item label="生成模式">
+              <n-form-item label="生成模式" path="codeMode">
                 <n-input-group style="flex: 1">
                   <n-select
                     v-model:value="form.codeMode"
-                    :options="codeModeOptions"
+                    :options="CODE_MODE_OPTIONS"
                     style="flex: 1"
                     placeholder="选择验证码字符组成方式"
                     @update:value="previewCode"
@@ -77,17 +78,21 @@
                   </n-tooltip>
                 </n-input-group>
               </n-form-item>
-              <n-form-item label="绑定前缀">
+              <n-form-item label="绑定前缀" path="prefix">
                 <n-input
                   v-model:value="form.prefix"
-                  placeholder="如：/绑定 ，用于绑定账号的指令前缀"
+                  :placeholder="`如：/绑定 ，用于绑定账号的指令前缀，最多${BINDING_CONSTRAINTS.prefix.maxLength}字符`"
+                  :maxlength="BINDING_CONSTRAINTS.prefix.maxLength"
+                  show-count
                   @update:value="validatePrefixes"
                 />
               </n-form-item>
-              <n-form-item label="解绑前缀">
+              <n-form-item label="解绑前缀" path="unbindPrefix">
                 <n-input
                   v-model:value="form.unbindPrefix"
-                  placeholder="如：/解绑 ，用于解绑账号的专用指令前缀，留空则用绑定前缀+玩家名"
+                  :placeholder="`如：/解绑 ，用于解绑账号的专用指令前缀，留空则用绑定前缀+玩家名，最多${BINDING_CONSTRAINTS.unbindPrefix.maxLength}字符`"
+                  :maxlength="BINDING_CONSTRAINTS.unbindPrefix.maxLength"
+                  show-count
                   @update:value="validatePrefixes"
                 />
               </n-form-item>
@@ -105,25 +110,29 @@
             <template #header-extra>
               <n-tag size="small" type="warning" round>可选</n-tag>
             </template>
-            <n-form v-if="form" :model="form" label-placement="top" :label-width="isMobile ? undefined : '120px'">
+            <n-form v-if="form" :model="form" :rules="bindingFormRules" label-placement="top" :label-width="isMobile ? undefined : '120px'">
               <n-form-item label="强制绑定">
                 <div class="switch-wrapper">
                   <n-switch v-model:value="form.forceBind" />
                 </div>
               </n-form-item>
-              <n-form-item label="未绑定踢出消息">
+              <n-form-item label="未绑定踢出消息" path="kickMsg">
                 <n-input
                   v-model:value="form.kickMsg"
                   type="textarea"
                   :rows="3"
+                  :maxlength="BINDING_CONSTRAINTS.kickMsg.maxLength"
+                  show-count
                   placeholder="当玩家未绑定社交账号时显示的踢出消息，支持颜色代码"
                 />
               </n-form-item>
-              <n-form-item label="解绑踢出消息">
+              <n-form-item label="解绑踢出消息" path="unbindKickMsg">
                 <n-input
                   v-model:value="form.unbindKickMsg"
                   type="textarea"
                   :rows="2"
+                  :maxlength="BINDING_CONSTRAINTS.unbindKickMsg.maxLength"
+                  show-count
                   placeholder="当玩家的社交账号被解绑时显示的踢出消息"
                 />
               </n-form-item>
@@ -134,18 +143,38 @@
         <!-- 反馈消息卡片 -->
         <n-gi>
           <n-card title="反馈消息配置" size="small" class="config-card">
-            <n-form v-if="form" :model="form" label-placement="top" :label-width="isMobile ? undefined : '120px'">
-              <n-form-item label="绑定成功">
-                <n-input v-model:value="form.bindSuccessMsg" placeholder="绑定成功时的反馈消息，支持#user占位符" />
+            <n-form v-if="form" :model="form" :rules="bindingFormRules" label-placement="top" :label-width="isMobile ? undefined : '120px'">
+              <n-form-item label="绑定成功" path="bindSuccessMsg">
+                <n-input 
+                  v-model:value="form.bindSuccessMsg" 
+                  :maxlength="BINDING_CONSTRAINTS.bindSuccessMsg.maxLength"
+                  show-count
+                  placeholder="绑定成功时的反馈消息，支持#user占位符" 
+                />
               </n-form-item>
-              <n-form-item label="绑定失败">
-                <n-input v-model:value="form.bindFailMsg" placeholder="绑定失败时的反馈消息" />
+              <n-form-item label="绑定失败" path="bindFailMsg">
+                <n-input 
+                  v-model:value="form.bindFailMsg" 
+                  :maxlength="BINDING_CONSTRAINTS.bindFailMsg.maxLength"
+                  show-count
+                  placeholder="绑定失败时的反馈消息" 
+                />
               </n-form-item>
-              <n-form-item label="解绑成功">
-                <n-input v-model:value="form.unbindSuccessMsg" placeholder="解绑成功时的反馈消息，支持#user占位符" />
+              <n-form-item label="解绑成功" path="unbindSuccessMsg">
+                <n-input 
+                  v-model:value="form.unbindSuccessMsg" 
+                  :maxlength="BINDING_CONSTRAINTS.unbindSuccessMsg.maxLength"
+                  show-count
+                  placeholder="解绑成功时的反馈消息，支持#user占位符" 
+                />
               </n-form-item>
-              <n-form-item label="解绑失败">
-                <n-input v-model:value="form.unbindFailMsg" placeholder="解绑失败时的反馈消息" />
+              <n-form-item label="解绑失败" path="unbindFailMsg">
+                <n-input 
+                  v-model:value="form.unbindFailMsg" 
+                  :maxlength="BINDING_CONSTRAINTS.unbindFailMsg.maxLength"
+                  show-count
+                  placeholder="解绑失败时的反馈消息" 
+                />
               </n-form-item>
             </n-form>
           </n-card>
@@ -262,6 +291,12 @@ import ServerPageHeader from '~/components/Layout/ServerPageHeader.vue';
 import { useServerData } from '~/composables/useServerData';
 import { useBindingConfig } from '~/composables/useBindingConfig';
 import { useAdapterStatus } from '~/composables/useAdapterStatus';
+import { 
+  bindingFormRules, 
+  validators, 
+  BINDING_CONSTRAINTS, 
+  CODE_MODE_OPTIONS 
+} from '~/utils/validation/bindingRules';
 import type { ServerBindingConfig } from '~/server/utils/config/bindingConfigManager';
 
 // 响应式断点检测
@@ -399,8 +434,9 @@ function validatePrefixes() {
   const prefix = form.value.prefix?.trim();
   const unbindPrefix = form.value.unbindPrefix?.trim();
 
-  if (prefix && unbindPrefix && prefix === unbindPrefix) {
-    prefixValidationError.value = '绑定前缀和解绑前缀不能相同';
+  const conflictResult = validators.prefixConflict(prefix || '', unbindPrefix || '');
+  if (!conflictResult.valid) {
+    prefixValidationError.value = conflictResult.message!;
     return false;
   }
 
@@ -408,13 +444,6 @@ function validatePrefixes() {
   return true;
 }
 
-const codeModeOptions = [
-  { label: '大小写单词和数字', value: 'mix' },
-  { label: '纯数字', value: 'number' },
-  { label: '纯单词(大小写)', value: 'word' },
-  { label: '纯单词(大写)', value: 'upper' },
-  { label: '纯单词(小写)', value: 'lower' }
-];
 const previewedCode = ref('');
 
 // 用于初始化和同步表单
@@ -479,9 +508,20 @@ async function saveBinding(): Promise<void> {
     message.success('配置保存成功');
   } catch (error: unknown) {
     // 处理后端校验错误
-    if (error instanceof Error && error.message && error.message.includes('绑定前缀和解绑前缀不能相同')) {
-      message.error('绑定前缀和解绑前缀不能相同');
-      prefixValidationError.value = '绑定前缀和解绑前缀不能相同';
+    if (error instanceof Error && error.message) {
+      // 检查是否包含多个错误信息（用分号分隔）
+      if (error.message.includes('；')) {
+        const errors = error.message.split('；');
+        message.error(`配置保存失败：${errors[0]}`); // 显示第一个错误
+        // 可以选择显示所有错误或只显示第一个
+      } else {
+        message.error(`配置保存失败：${error.message}`);
+      }
+      
+      // 特殊处理前缀冲突错误
+      if (error.message.includes('绑定前缀和解绑前缀不能相同')) {
+        prefixValidationError.value = '绑定前缀和解绑前缀不能相同';
+      }
       throw error;
     } else {
       message.error('配置保存失败');

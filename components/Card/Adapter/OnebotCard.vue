@@ -317,4 +317,26 @@ function deleteAdapter() {
   margin-top: 8px;
   text-align: right;
 }
+
+/* 卡片内容过渡动画 */
+.fade-slide-zoom-enter-active,
+.fade-slide-zoom-leave-active {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.fade-slide-zoom-enter-from {
+  opacity: 0;
+  transform: translateY(-15px) scale(0.95);
+}
+
+.fade-slide-zoom-leave-to {
+  opacity: 0;
+  transform: translateY(15px) scale(0.95);
+}
+
+.fade-slide-zoom-enter-to,
+.fade-slide-zoom-leave-from {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
 </style>

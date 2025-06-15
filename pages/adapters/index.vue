@@ -165,6 +165,46 @@ const handleSubmit = (e: Event) => {
   });
 };
 
+// 计算每组的适配器数量 - 瀑布流布局
+const groupedAdapters = computed(() => {
+  const totalAdapters = adapters.value.length;
+  if (totalAdapters === 0) return [];
+
+  let groupCount = 1; // 默认分组数
+
+  if (isMobile.value) {
+    groupCount = 1; // 移动端：1组
+  } else {
+    // 桌面端：根据屏幕宽度确定分组数
+    const breakpoint = useBreakpoint();
+    if (breakpoint.value === 'xl' || breakpoint.value === '2xl') {
+      groupCount = Math.min(4, totalAdapters); // 大屏：最多4组
+    } else if (breakpoint.value === 'l') {
+      groupCount = Math.min(3, totalAdapters); // 中屏：最多3组
+    } else {
+      groupCount = Math.min(2, totalAdapters); // 小屏：最多2组
+    }
+  }
+
+  // 瀑布流布局：先填满第一列，再填第二列...
+  const groups: Array<{ id: number; adapters: AdapterUnionType[] }> = [];
+
+  for (let i = 0; i < groupCount; i++) {
+    groups.push({
+      id: i,
+      adapters: []
+    });
+  }
+
+  // 按列优先分配适配器
+  for (let i = 0; i < totalAdapters; i++) {
+    const columnIndex = i % groupCount;
+    groups[columnIndex].adapters.push(adapters.value[i]);
+  }
+
+  return groups.filter((group) => group.adapters.length > 0);
+});
+
 const handleEditingChange = (adapterId: number, isEditing: boolean) => {
   if (isEditing) {
     editingAdapters.value.add(adapterId);
@@ -174,21 +214,22 @@ const handleEditingChange = (adapterId: number, isEditing: boolean) => {
 };
 
 const onBeforeCardEnter = (el: Element) => {
-  (el as HTMLElement).style.opacity = '0';
-  (el as HTMLElement).style.transform = 'scale(0.8) translateY(20px)';
+  const index = parseInt((el as HTMLElement).dataset.index || '0');
+  const delay = index * 100;
+
+  // 设置初始状态
+  (el as HTMLElement).style.transitionDelay = `${delay}ms`;
 };
 
 const onCardEnter = (el: Element, done: () => void) => {
+  // CSS 动画会自动处理，我们只需要在动画完成后调用 done
+  const transitionDuration = 600; // 与 CSS 中的 0.6s 匹配
   const index = parseInt((el as HTMLElement).dataset.index || '0');
   const delay = index * 100;
 
   setTimeout(() => {
-    (el as HTMLElement).style.transition = 'all 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
-    (el as HTMLElement).style.opacity = '1';
-    (el as HTMLElement).style.transform = 'scale(1) translateY(0)';
-
-    setTimeout(done, 600);
-  }, delay);
+    done();
+  }, transitionDuration + delay);
 };
 
 const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
@@ -338,18 +379,24 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
             </n-space>
           </template>
         </n-modal>
-        <n-grid :cols="isMobile ? 1 : '600:2 1100:3'" x-gap="16" y-gap="16" :item-responsive="true">
-          <n-gi v-for="(adapter, index) in adapters" :key="adapter.id">
-            <transition name="card-appear" appear :css="false" @enter="onCardEnter" @before-enter="onBeforeCardEnter">
-              <component
-                :is="getAdapterComponent(adapter.adapterType) || Common"
-                :adapter="isOnebotAdapter(adapter) ? adapter : adapter"
-                :data-index="index"
-                @update="getServerList"
-                @delete="getServerList"
-                @editing-change="handleEditingChange"
-              />
-            </transition>
+
+        <!-- 分组显示适配器 -->
+        <n-grid :cols="isMobile ? 1 : '600:2 1100:3 1200:4'" x-gap="16" y-gap="16" :item-responsive="true">
+          <n-gi v-for="group in groupedAdapters" :key="group.id">
+            <n-space vertical size="medium">
+              <div v-for="(adapter, index) in group.adapters" :key="adapter.id" style="margin-bottom: 16px">
+                <Transition name="card-appear" appear @enter="onCardEnter" @before-enter="onBeforeCardEnter">
+                  <component
+                    :is="getAdapterComponent(adapter.adapterType) || Common"
+                    :adapter="isOnebotAdapter(adapter) ? adapter : adapter"
+                    :data-index="group.id + index * groupedAdapters.length"
+                    @update="getServerList"
+                    @delete="getServerList"
+                    @editing-change="handleEditingChange"
+                  />
+                </Transition>
+              </div>
+            </n-space>
           </n-gi>
         </n-grid>
       </div>
@@ -494,5 +541,35 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
   :deep(.n-grid) {
     --n-gap: 12px;
   }
+}
+
+/* 卡片出现动画 */
+.card-appear-enter-active {
+  transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.card-appear-enter-from {
+  opacity: 0;
+  transform: scale(0.8) translateY(20px);
+}
+
+.card-appear-enter-to {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* 内容整体过渡动画 */
+.content-transition-enter-active {
+  transition: all 0.4s ease-out;
+}
+
+.content-transition-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.content-transition-enter-to {
+  opacity: 1;
+  transform: translateY(0);
 }
 </style>
