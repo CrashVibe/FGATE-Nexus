@@ -60,10 +60,11 @@
 
 <script setup lang="ts">
 import { useBreakpoint, useMemo } from 'vooks';
-import { MenuOutline, SettingsOutline, ServerOutline, BuildOutline } from '@vicons/ionicons5';
+import { MenuOutline } from '@vicons/ionicons5';
 import { useRouter, useRoute, type RouteLocationAsPathGeneric } from 'vue-router';
-import { NIcon } from 'naive-ui';
-import { provide, ref } from 'vue';
+import { ref, computed, h, provide, onUnmounted, onMounted } from 'vue';
+import { useDialog, NIcon } from 'naive-ui';
+import { usePageStateProvider } from '../composables/usePageState';
 
 function useIsMobile() {
   const breakpointRef = useBreakpoint();
@@ -74,88 +75,53 @@ function useIsMobile() {
 
 const router = useRouter();
 const route = useRoute();
+const dialog = useDialog();
+
+// 页面状态管理
+const { setPageState, clearPageState, isPageDirty, savePage } = usePageStateProvider();
+
+// 提供页面状态注册函数给子组件
+provide('registerPageState', setPageState);
+provide('clearPageState', clearPageState);
 
 // 移动端菜单状态
 const showMobileMenu = ref(false);
 
-function renderIcon(icon: Component) {
-  return () => h(NIcon, null, { default: () => h(icon) });
+// 路由离开时清理状态
+onUnmounted(() => {
+  clearPageState();
+});
+
+function needIntercept(path: string | undefined) {
+  return path && /\/servers\/\d+\/(general|binding)$/.test(path);
 }
 
-const getCurrentServerId = () => {
-  const match = route.path.match(/\/servers\/(\d+)/);
-  return match ? match[1] : null;
-};
-
-const menuOptions = computed(() => {
-  const serverId = getCurrentServerId();
-  const menu: Array<{ label: string; key: string; icon: ReturnType<typeof renderIcon>; desc?: string }> = [];
-
-  menu.push({
-    label: '返回服务器管理',
-    key: '/',
-    icon: renderIcon(MenuOutline),
-    desc: '返回服务器列表主页。'
-  });
-
-  if (serverId) {
-    menu.push({
-      label: '配置总览',
-      key: `/servers/${serverId}/config`,
-      icon: renderIcon(SettingsOutline),
-      desc: '查看和管理服务器的所有配置项总览。'
-    });
-
-    menu.push({
-      label: '基础设置',
-      key: `/servers/${serverId}/general`,
-      icon: renderIcon(ServerOutline),
-      desc: '配置服务器的基础运行参数和常规设置。'
-    });
-
-    menu.push({
-      label: '账号绑定',
-      key: `/servers/${serverId}/binding`,
-      icon: renderIcon(SettingsOutline),
-      desc: '设置社交账号与游戏账号的绑定规则。'
-    });
-
-    menu.push({
-      label: '高级配置',
-      key: `/servers/${serverId}/advanced`,
-      icon: renderIcon(BuildOutline),
-      desc: '高级功能配置，包括性能优化、调试选项等。'
-    });
-  }
-
-  return menu;
-});
-
-const selectedKey = computed(() => {
-  return route.path;
-});
-
 const handleMenuSelect = (key: RouteLocationAsPathGeneric) => {
-  console.log('Menu selected:', key, 'Current route:', route.path);
-
   const targetPath = String(key);
-  console.log('Navigating to:', targetPath);
+  if (!targetPath || targetPath === 'undefined' || targetPath === route.path) return;
 
-  if (targetPath === route.path) {
-    console.log('Same route, skipping navigation');
+  if (needIntercept(route.path) && isPageDirty()) {
+    dialog.warning({
+      title: '有未保存的更改',
+      content: '切换页面前请保存更改，或放弃未保存内容。',
+      positiveText: '保存并切换',
+      negativeText: '放弃更改',
+      onPositiveClick: async () => {
+        await savePage();
+        router.push(targetPath).catch(() => {});
+      },
+      onNegativeClick: () => {
+        router.push(targetPath).catch(() => {});
+      }
+    });
     return;
   }
-
-  router.push(targetPath).catch((err) => {
-    console.error('Navigation error:', err);
-  });
+  router.push(targetPath).catch(() => {});
 };
 
 // 移动端菜单选择处理
 const handleMobileMenuSelect = (key: RouteLocationAsPathGeneric) => {
-  // 关闭移动端菜单
   showMobileMenu.value = false;
-  // 执行导航
   handleMenuSelect(key);
 };
 
@@ -164,7 +130,64 @@ const showSider = useMemo(() => {
   return !isMobile.value;
 });
 
-provide('menuOptions', menuOptions);
+// 菜单选项和选中项
+const getCurrentServerId = () => {
+  if (!route.path) return null;
+  const match = route.path.match(/\/servers\/(\d+)/);
+  return match ? match[1] : null;
+};
+
+const menuOptions = computed(() => {
+  const serverId = getCurrentServerId();
+  const menu = [];
+  menu.push({
+    label: '返回服务器管理',
+    key: '/',
+    icon: () => h(NIcon, null, { default: () => h(MenuOutline) }),
+    desc: '返回服务器列表主页。'
+  });
+  if (serverId) {
+    menu.push({
+      label: '基础设置',
+      key: `/servers/${serverId}/general`,
+      icon: () => h(NIcon, null, { default: () => h(MenuOutline) }),
+      desc: '配置服务器的基础运行参数和常规设置。'
+    });
+    menu.push({
+      label: '账号绑定',
+      key: `/servers/${serverId}/binding`,
+      icon: () => h(NIcon, null, { default: () => h(MenuOutline) }),
+      desc: '设置社交账号与游戏账号的绑定规则。'
+    });
+    menu.push({
+      label: '高级配置',
+      key: `/servers/${serverId}/advanced`,
+      icon: () => h(NIcon, null, { default: () => h(MenuOutline) }),
+      desc: '高级功能配置，包括性能优化、调试选项等。'
+    });
+  }
+  return menu;
+});
+
+const selectedKey = computed(() => route.path || '');
+
+// 添加未保存更改的关闭/刷新提示
+onMounted(() => {
+  const beforeUnloadHandler = (e: BeforeUnloadEvent) => {
+    if (needIntercept(route.path) && isPageDirty()) {
+      e.preventDefault();
+      e.returnValue = '有未保存的更改，确定要离开吗？';
+      return '有未保存的更改，确定要离开吗？';
+    }
+  };
+  window.addEventListener('beforeunload', beforeUnloadHandler);
+
+  // 组件卸载时移除事件
+  onUnmounted(() => {
+    window.removeEventListener('beforeunload', beforeUnloadHandler);
+    clearPageState();
+  });
+});
 </script>
 
 <style lang="less" scoped>

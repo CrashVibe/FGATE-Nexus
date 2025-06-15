@@ -443,7 +443,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, inject, onUnmounted } from 'vue';
 import { CopyOutline, HelpCircleOutline, SearchOutline, CheckmarkCircleOutline } from '@vicons/ionicons5';
 import { useBreakpoint, useMemo } from 'vooks';
 import ServerPageWrapper from '~/components/Layout/ServerPageWrapper.vue';
@@ -474,17 +474,29 @@ const { serverId, serverName } = useServerData();
 const { fetchConfig, saveConfig } = useBindingConfig(serverId.value);
 const { adapterStatus, fetchAdapterStatus } = useAdapterStatus(serverId.value);
 
+// 从 layout 注入页面状态管理函数
+const registerPageState = inject<(state: PageState) => void>('registerPageState');
+const clearPageState = inject<() => void>('clearPageState');
+
 const form = ref<ServerBindingConfig>();
+const initialForm = ref<ServerBindingConfig | undefined>();
 const loading = ref(true);
 
 onMounted(async () => {
+  // 注册页面状态到 layout
+  if (registerPageState) {
+    registerPageState({
+      isDirty: () => isDirty.value,
+      save: saveBinding
+    });
+  }
+
   loading.value = true;
   try {
-    // 并行获取配置和适配器状态
     const [configRes] = await Promise.all([fetchConfig(), fetchAdapterStatus()]);
-
     if (configRes && configRes.config) {
       form.value = { ...configRes.config };
+      initialForm.value = { ...configRes.config };
     }
   } catch (error) {
     console.error('Failed to load page data:', error);
@@ -492,6 +504,35 @@ onMounted(async () => {
     loading.value = false;
     previewCode();
   }
+});
+
+// 组件卸载时清理状态
+onUnmounted(() => {
+  if (clearPageState) {
+    clearPageState();
+  }
+});
+
+const isDirty = computed(() => {
+  if (!form.value || !initialForm.value) return false;
+  // 只比较可编辑字段
+  const keys: (keyof ServerBindingConfig)[] = [
+    'maxBindCount',
+    'codeLength',
+    'codeExpire',
+    'codeMode',
+    'prefix',
+    'unbindPrefix',
+    'allowUnbind',
+    'forceBind',
+    'kickMsg',
+    'unbindKickMsg',
+    'bindSuccessMsg',
+    'bindFailMsg',
+    'unbindSuccessMsg',
+    'unbindFailMsg'
+  ];
+  return keys.some((key) => form.value?.[key] !== initialForm.value?.[key]);
 });
 
 // 动态生成指令示例
@@ -608,31 +649,35 @@ async function copyToClipboard(text: string) {
 }
 
 // 保存绑定配置
-async function saveBinding() {
+async function saveBinding(): Promise<void> {
   if (!form.value) return;
 
   // 检查适配器状态
   if (!adapterStatus.value?.hasAdapter) {
     message.error('请先配置绑定适配器');
-    return;
+    throw new Error('请先配置绑定适配器');
   }
 
   // 校验前缀
   if (!validatePrefixes()) {
     message.error('请修正前缀配置错误');
-    return;
+    throw new Error('请修正前缀配置错误');
   }
 
   try {
     await saveConfig({ ...form.value });
+    // 更新初始表单数据
+    initialForm.value = { ...form.value };
     message.success('配置保存成功');
   } catch (error: unknown) {
     // 处理后端校验错误
     if (error instanceof Error && error.message && error.message.includes('绑定前缀和解绑前缀不能相同')) {
       message.error('绑定前缀和解绑前缀不能相同');
       prefixValidationError.value = '绑定前缀和解绑前缀不能相同';
+      throw error;
     } else {
       message.error('配置保存失败');
+      throw error;
     }
   }
 }

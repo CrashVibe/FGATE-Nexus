@@ -6,11 +6,11 @@ import { WebSocketManager } from '~/server/utils/websocket-manager';
 export default defineEventHandler(async (event) => {
     const serverId = Number(getRouterParam(event, 'id'));
 
-    if (!serverId) {
+    if (!serverId || isNaN(serverId) || serverId <= 0) {
         event.node.res.statusCode = 400;
         return {
             success: false,
-            message: 'Invalid server ID',
+            message: 'Invalid server ID: ID must be a positive number',
             data: undefined
         };
     }

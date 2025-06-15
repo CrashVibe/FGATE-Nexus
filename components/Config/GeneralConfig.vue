@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed, inject, onUnmounted } from 'vue';
 import { useMessage } from 'naive-ui';
 import { useRequest } from 'alova/client';
 import { useBreakpoint, useMemo } from 'vooks';
@@ -111,11 +111,17 @@ const message = useMessage();
 const { serverApi, adapterApi } = useApi();
 const { adapterStatus, fetchAdapterStatus } = useAdapterStatus(props.serverId);
 
+// 从 layout 注入页面状态管理函数
+const registerPageState = inject<(state: PageState) => void>('registerPageState');
+const clearPageState = inject<() => void>('clearPageState');
+
 const generalConfig = ref({
   name: '',
   token: '',
   adapter_id: null as number | null // 明确类型
 });
+
+const initialConfig = ref({ name: '', token: '', adapter_id: null as number | null });
 
 const serverStatus = ref<ServerWithStatus | null>(null);
 const saving = ref(false);
@@ -163,6 +169,8 @@ const fetchGeneralConfig = () => {
           token: data.data.token || '',
           adapter_id: data.data.adapter_id ?? null
         };
+        // 记录初始数据用于未保存检测
+        initialConfig.value = { ...generalConfig.value };
         serverStatus.value = data.data;
       } else {
         message.error(data.message || '获取基本配置失败');
@@ -174,36 +182,65 @@ const fetchGeneralConfig = () => {
     });
 };
 
-const saveGeneralConfig = () => {
+const isDirty = computed(() => {
+  // 只比较可编辑字段
+  return (
+    generalConfig.value.name !== initialConfig.value.name ||
+    generalConfig.value.adapter_id !== initialConfig.value.adapter_id
+  );
+});
+
+const saveGeneralConfig = async () => {
   saving.value = true;
-  useRequest(
-    serverApi.updateServer(props.serverId, {
-      name: generalConfig.value.name,
-      adapter_id: generalConfig.value.adapter_id
-    })
-  )
-    .onSuccess(({ data }) => {
-      if (data.success) {
-        message.success('基本配置保存成功');
-        // 保存成功后刷新 Bot 实例状态
-        fetchAdapterStatus();
-      } else {
-        message.error(data.message || '保存基本配置失败');
-      }
-    })
-    .onError((error) => {
-      message.error('保存基本配置失败');
-      console.error('保存基本配置失败:', error);
-    })
-    .onComplete(() => {
-      saving.value = false;
-    });
+  return new Promise<void>((resolve, reject) => {
+    useRequest(
+      serverApi.updateServer(props.serverId, {
+        name: generalConfig.value.name,
+        adapter_id: generalConfig.value.adapter_id
+      })
+    )
+      .onSuccess(({ data }) => {
+        if (data.success) {
+          message.success('基本配置保存成功');
+          // 更新初始配置
+          initialConfig.value = { ...generalConfig.value };
+          // 保存成功后刷新 Bot 实例状态
+          fetchAdapterStatus();
+          resolve();
+        } else {
+          message.error(data.message || '保存基本配置失败');
+          reject(new Error(data.message || '保存基本配置失败'));
+        }
+      })
+      .onError((error) => {
+        message.error('保存基本配置失败');
+        console.error('保存基本配置失败:', error);
+        reject(error);
+      })
+      .onComplete(() => {
+        saving.value = false;
+      });
+  });
 };
 
+// 注册页面状态到 layout
 onMounted(() => {
+  if (registerPageState) {
+    registerPageState({
+      isDirty: () => isDirty.value,
+      save: saveGeneralConfig
+    });
+  }
   fetchGeneralConfig();
   fetchBotOptions();
   fetchAdapterStatus();
+});
+
+// 组件卸载时清理状态
+onUnmounted(() => {
+  if (clearPageState) {
+    clearPageState();
+  }
 });
 </script>
 
