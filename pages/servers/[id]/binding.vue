@@ -50,17 +50,17 @@
                     <n-gi>
                       <n-form-item>
                         <template #label>
-                          <n-tooltip trigger="hover">
-                            <template #trigger>
-                              <span class="label-with-tooltip">
-                                绑定数量
+                          <span class="label-with-tooltip">
+                            绑定数量
+                            <n-tooltip trigger="hover">
+                              <template #trigger>
                                 <n-icon size="14" class="help-icon">
                                   <HelpCircleOutline />
                                 </n-icon>
-                              </span>
-                            </template>
-                            每个社交账号最多可以绑定的游戏账号数量
-                          </n-tooltip>
+                              </template>
+                              每个社交账号最多可以绑定的游戏账号数量
+                            </n-tooltip>
+                          </span>
                         </template>
                         <n-input-number v-model:value="form.maxBindCount" min="1" max="10" class="number-input" />
                       </n-form-item>
@@ -68,17 +68,17 @@
                     <n-gi>
                       <n-form-item>
                         <template #label>
-                          <n-tooltip trigger="hover">
-                            <template #trigger>
-                              <span class="label-with-tooltip">
-                                验证码长度
+                          <span class="label-with-tooltip">
+                            验证码长度
+                            <n-tooltip trigger="hover">
+                              <template #trigger>
                                 <n-icon size="14" class="help-icon">
                                   <HelpCircleOutline />
                                 </n-icon>
-                              </span>
-                            </template>
-                            生成的验证码字符数量，影响验证码复杂度
-                          </n-tooltip>
+                              </template>
+                              生成的验证码字符数量，影响验证码复杂度
+                            </n-tooltip>
+                          </span>
                         </template>
                         <n-input-number v-model:value="form.codeLength" min="4" max="12" class="number-input" />
                       </n-form-item>
@@ -86,17 +86,17 @@
                     <n-gi>
                       <n-form-item>
                         <template #label>
-                          <n-tooltip trigger="hover">
-                            <template #trigger>
-                              <span class="label-with-tooltip">
-                                有效时间
+                          <span class="label-with-tooltip">
+                            有效时间
+                            <n-tooltip trigger="hover">
+                              <template #trigger>
                                 <n-icon size="14" class="help-icon">
                                   <HelpCircleOutline />
                                 </n-icon>
-                              </span>
-                            </template>
-                            验证码的有效时间，单位为分钟，超时后需重新生成
-                          </n-tooltip>
+                              </template>
+                              验证码的有效时间，单位为分钟，超时后需重新生成
+                            </n-tooltip>
+                          </span>
                         </template>
                         <n-input-number v-model:value="form.codeExpire" min="1" max="60" class="number-input">
                           <template #suffix>分钟</template>
@@ -110,17 +110,17 @@
                     <n-gi span="1 s:1 m:2 l:2">
                       <n-form-item>
                         <template #label>
-                          <n-tooltip trigger="hover">
-                            <template #trigger>
-                              <span class="label-with-tooltip">
-                                生成模式
+                          <span class="label-with-tooltip">
+                            生成模式
+                            <n-tooltip trigger="hover">
+                              <template #trigger>
                                 <n-icon size="14" class="help-icon">
                                   <HelpCircleOutline />
                                 </n-icon>
-                              </span>
-                            </template>
-                            验证码的字符组成方式，决定验证码的字符类型和复杂度
-                          </n-tooltip>
+                              </template>
+                              验证码的字符组成方式，决定验证码的字符类型和复杂度
+                            </n-tooltip>
+                          </span>
                         </template>
                         <n-input-group style="flex: 1">
                           <n-select
@@ -150,17 +150,17 @@
                     <n-gi>
                       <n-form-item>
                         <template #label>
-                          <n-tooltip trigger="hover">
-                            <template #trigger>
-                              <span class="label-with-tooltip">
-                                绑定前缀
+                          <span class="label-with-tooltip">
+                            绑定前缀
+                            <n-tooltip trigger="hover">
+                              <template #trigger>
                                 <n-icon size="14" class="help-icon">
                                   <HelpCircleOutline />
                                 </n-icon>
-                              </span>
-                            </template>
-                            用户绑定游戏账号时使用的指令前缀
-                          </n-tooltip>
+                              </template>
+                              用户绑定游戏账号时使用的指令前缀
+                            </n-tooltip>
+                          </span>
                         </template>
                         <n-input
                           v-model:value="form.prefix"
@@ -172,17 +172,17 @@
                     <n-gi>
                       <n-form-item>
                         <template #label>
-                          <n-tooltip trigger="hover">
-                            <template #trigger>
-                              <span class="label-with-tooltip">
-                                解绑前缀
+                          <span class="label-with-tooltip">
+                            解绑前缀
+                            <n-tooltip trigger="hover">
+                              <template #trigger>
                                 <n-icon size="14" class="help-icon">
                                   <HelpCircleOutline />
                                 </n-icon>
-                              </span>
-                            </template>
-                            用户解绑游戏账号时使用的专用指令前缀，留空则使用绑定前缀+玩家名的方式解绑
-                          </n-tooltip>
+                              </template>
+                              用户解绑游戏账号时使用的专用指令前缀，留空则使用绑定前缀+玩家名的方式解绑
+                            </n-tooltip>
+                          </span>
                         </template>
                         <n-input
                           v-model:value="form.unbindPrefix"
@@ -203,17 +203,17 @@
                     <n-gi>
                       <n-form-item>
                         <template #label>
-                          <n-tooltip trigger="hover">
-                            <template #trigger>
-                              <span class="label-with-tooltip">
-                                允许解绑
+                          <span class="label-with-tooltip">
+                            允许解绑
+                            <n-tooltip trigger="hover">
+                              <template #trigger>
                                 <n-icon size="14" class="help-icon">
                                   <HelpCircleOutline />
                                 </n-icon>
-                              </span>
-                            </template>
-                            是否允许用户主动解除账号绑定关系
-                          </n-tooltip>
+                              </template>
+                              是否允许用户主动解除账号绑定关系
+                            </n-tooltip>
+                          </span>
                         </template>
                         <div class="switch-wrapper">
                           <n-switch v-model:value="form.allowUnbind" />
@@ -257,15 +257,13 @@
                           </template>
                         </n-button>
                       </div>
-                      <div class="example-desc">
+                      <div class="example-desc center-desc">
+                        <n-text depth="3" size="small" class="desc-with-tooltip"> 群聊绑定指令 </n-text>
                         <n-tooltip trigger="hover">
                           <template #trigger>
-                            <n-text depth="3" size="small" class="desc-with-tooltip">
-                              群聊绑定指令
-                              <n-icon size="12">
-                                <HelpCircleOutline />
-                              </n-icon>
-                            </n-text>
+                            <n-icon size="12">
+                              <HelpCircleOutline />
+                            </n-icon>
                           </template>
                           用户在QQ群或其他社交平台聊天中发送此指令来绑定游戏账号
                         </n-tooltip>
@@ -294,14 +292,12 @@
                         </n-button>
                       </div>
                       <div class="example-desc">
+                        <n-text depth="3" size="small" class="desc-with-tooltip"> 群聊解绑指令 </n-text>
                         <n-tooltip trigger="hover">
                           <template #trigger>
-                            <n-text depth="3" size="small" class="desc-with-tooltip">
-                              群聊解绑指令
-                              <n-icon size="12">
-                                <HelpCircleOutline />
-                              </n-icon>
-                            </n-text>
+                            <n-icon size="12">
+                              <HelpCircleOutline />
+                            </n-icon>
                           </template>
                           <div v-if="form && form.unbindPrefix && form.unbindPrefix.trim()">
                             使用专用解绑前缀进行解绑操作，直接输入玩家名称即可
@@ -339,17 +335,17 @@
                     <n-gi>
                       <n-form-item>
                         <template #label>
-                          <n-tooltip trigger="hover">
-                            <template #trigger>
-                              <span class="label-with-tooltip">
-                                强制绑定
+                          <span class="label-with-tooltip">
+                            强制绑定
+                            <n-tooltip trigger="hover">
+                              <template #trigger>
                                 <n-icon size="14" class="help-icon">
                                   <HelpCircleOutline />
                                 </n-icon>
-                              </span>
-                            </template>
-                            开启后，未绑定社交账号的玩家将被踢出服务器
-                          </n-tooltip>
+                              </template>
+                              开启后，未绑定社交账号的玩家将被踢出服务器
+                            </n-tooltip>
+                          </span>
                         </template>
                         <div class="switch-wrapper">
                           <n-switch v-model:value="form.forceBind" />
@@ -362,34 +358,34 @@
                   <n-space vertical size="large">
                     <n-form-item>
                       <template #label>
-                        <n-tooltip trigger="hover">
-                          <template #trigger>
-                            <span class="label-with-tooltip">
-                              未绑定踢出消息
+                        <span class="label-with-tooltip">
+                          未绑定踢出消息
+                          <n-tooltip trigger="hover">
+                            <template #trigger>
                               <n-icon size="14" class="help-icon">
                                 <HelpCircleOutline />
                               </n-icon>
-                            </span>
-                          </template>
-                          当玩家未绑定社交账号时显示的踢出消息（支持颜色代码）
-                        </n-tooltip>
+                            </template>
+                            当玩家未绑定社交账号时显示的踢出消息（支持颜色代码）
+                          </n-tooltip>
+                        </span>
                       </template>
                       <n-input v-model:value="form.kickMsg" type="textarea" :rows="5" />
                     </n-form-item>
 
                     <n-form-item>
                       <template #label>
-                        <n-tooltip trigger="hover">
-                          <template #trigger>
-                            <span class="label-with-tooltip">
-                              解绑踢出消息
+                        <span class="label-with-tooltip">
+                          解绑踢出消息
+                          <n-tooltip trigger="hover">
+                            <template #trigger>
                               <n-icon size="14" class="help-icon">
                                 <HelpCircleOutline />
                               </n-icon>
-                            </span>
-                          </template>
-                          当玩家的社交账号被解绑时显示的踢出消息
-                        </n-tooltip>
+                            </template>
+                            当玩家的社交账号被解绑时显示的踢出消息
+                          </n-tooltip>
+                        </span>
                       </template>
                       <n-input v-model:value="form.unbindKickMsg" type="textarea" :rows="3" />
                     </n-form-item>
@@ -674,7 +670,8 @@ async function saveBinding() {
   height: 34px; // 与其他输入框高度对齐
 }
 
-.label-with-tooltip {
+.label-with-tooltip,
+.desc-with-tooltip {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -691,11 +688,10 @@ async function saveBinding() {
   }
 }
 
-.desc-with-tooltip {
+.center-desc {
   display: flex;
   align-items: center;
   gap: 4px;
-  cursor: help;
 }
 
 .section-divider {
@@ -761,6 +757,9 @@ async function saveBinding() {
       }
 
       .example-desc {
+        display: flex;
+        align-items: center;
+        gap: 4px;
         padding-left: 4px;
       }
 
