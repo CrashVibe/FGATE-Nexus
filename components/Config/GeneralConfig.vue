@@ -42,20 +42,35 @@
 
       <!-- 新增：适配器选择 -->
       <n-card title="适配器绑定" size="small">
-        <n-form
-          :model="generalConfig"
-          :label-placement="isMobile ? 'top' : 'left'"
-          :label-width="isMobile ? undefined : '120px'"
-        >
-          <n-form-item label="适配器">
-            <n-select
-              v-model:value="generalConfig.adapter_id"
-              :options="adapterOptions"
-              placeholder="请选择要绑定的适配器"
-              clearable
-            />
-          </n-form-item>
-        </n-form>
+        <n-space vertical size="medium">
+          <!-- 适配器状态提示 -->
+          <template v-if="adapterStatus">
+            <n-alert v-if="!adapterStatus.hasAdapter" type="info" size="small">
+              未配置适配器，某些功能（如账号绑定）将无法使用
+            </n-alert>
+            <n-alert v-else-if="!adapterStatus.adapterConnected" type="warning" size="small">
+              适配器已配置但未连接 ({{ adapterStatus.adapterInfo?.type }})
+            </n-alert>
+            <n-alert v-else type="success" size="small"> 适配器已连接 ({{ adapterStatus.adapterInfo?.type }}) </n-alert>
+          </template>
+
+          <n-form
+            :model="generalConfig"
+            :label-placement="isMobile ? 'top' : 'left'"
+            :label-width="isMobile ? undefined : '120px'"
+          >
+            <n-form-item label="适配器">
+              <n-select
+                v-model:value="generalConfig.adapter_id"
+                :options="adapterOptions"
+                placeholder="请选择要绑定的适配器"
+                clearable
+                @update:value="onAdapterChange"
+              />
+              <template #feedback> 适配器用于连接外部平台（如QQ机器人），实现账号绑定等功能 </template>
+            </n-form-item>
+          </n-form>
+        </n-space>
       </n-card>
 
       <!-- 保存按钮 -->
@@ -76,6 +91,7 @@ import { useBreakpoint, useMemo } from 'vooks';
 import type { ServerWithStatus } from '~/server/shared/types/server/api';
 import type { AdapterUnionType } from '~/server/shared/types/adapters/adapter';
 import { isOnebotAdapter, isWebSocketAdapter } from '~/utils/adapters/componentMap';
+import { useAdapterStatus } from '~/composables/useAdapterStatus';
 
 // 响应式断点检测
 function useIsMobile() {
@@ -93,6 +109,7 @@ const props = defineProps<{
 
 const message = useMessage();
 const { serverApi, adapterApi } = useApi();
+const { adapterStatus, fetchAdapterStatus } = useAdapterStatus(props.serverId);
 
 const generalConfig = ref({
   name: '',
@@ -129,6 +146,14 @@ const fetchAdapterOptions = () => {
   });
 };
 
+// 适配器变更时的处理
+const onAdapterChange = () => {
+  // 延迟更新适配器状态，给后端时间处理
+  setTimeout(() => {
+    fetchAdapterStatus();
+  }, 500);
+};
+
 const fetchGeneralConfig = () => {
   useRequest(serverApi.getServer(props.serverId))
     .onSuccess(({ data }) => {
@@ -160,6 +185,8 @@ const saveGeneralConfig = () => {
     .onSuccess(({ data }) => {
       if (data.success) {
         message.success('基本配置保存成功');
+        // 保存成功后刷新适配器状态
+        fetchAdapterStatus();
       } else {
         message.error(data.message || '保存基本配置失败');
       }
@@ -176,6 +203,7 @@ const saveGeneralConfig = () => {
 onMounted(() => {
   fetchGeneralConfig();
   fetchAdapterOptions();
+  fetchAdapterStatus();
 });
 </script>
 

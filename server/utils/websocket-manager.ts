@@ -19,7 +19,6 @@ export class WebSocketManager {
         this.minecraftManager = new MinecraftClientManager();
     }
 
-    // 单例模式
     public static getInstance(): WebSocketManager {
         if (!WebSocketManager.instance) {
             WebSocketManager.instance = new WebSocketManager();
@@ -27,11 +26,14 @@ export class WebSocketManager {
         return WebSocketManager.instance;
     }
 
+    public hasClient(peer: Peer<AdapterInternal>): boolean {
+        return this.clients.has(peer);
+    }
+
     getClientIdByPeer(peer: Peer<AdapterInternal>): string | undefined {
         return this.clients.get(peer)?.id;
     }
 
-    // 通过 peer 获取强绑定的 client，不存在则抛出异常
     private getBoundClient(peer: Peer<AdapterInternal>): ClientInfo {
         const client = this.clients.get(peer);
         if (!client) {
@@ -40,7 +42,6 @@ export class WebSocketManager {
         return client;
     }
 
-    // 通过 client 获取强绑定的 peer，不存在则抛出异常
     private getBoundPeer(client: ClientInfo): Peer<AdapterInternal> {
         const peer = peerClientMap.get(client);
         if (!peer) throw new Error(`未找到与 client(${client.id}) 绑定的 peer`);
@@ -48,7 +49,6 @@ export class WebSocketManager {
     }
 
     handleConnection(peer: Peer<AdapterInternal>) {
-        // 新建客户端信息并与 peer 建立双向强绑定
         const clientId = uuidv4();
         const token = peer.request.headers.get('authorization')?.replace('Bearer ', '') || '';
         const clientVersion = peer.request.headers.get('x-api-version') || '1.0.0';
@@ -113,7 +113,8 @@ export class WebSocketManager {
                     typeof (request.params as { player?: unknown }).player === 'string' &&
                     typeof (request.params as { uuid?: unknown }).uuid === 'string'
                 ) {
-                    this.handlePlayerJoin(peer, request.params as { player: string; uuid: string });
+                    const params = request.params as { player: string; uuid: string; ip: string | null };
+                    this.handlePlayerJoin(peer, params);
                 } else {
                     this.sendError(peer, -32602, '参数无效', request.id ?? null);
                 }
@@ -148,7 +149,10 @@ export class WebSocketManager {
         }
     }
 
-    private handlePlayerJoin(peer: Peer<AdapterInternal>, params: { player: string; uuid: string }) {
+    private async handlePlayerJoin(
+        peer: Peer<AdapterInternal>,
+        params: { player: string; uuid: string; ip: string | null }
+    ) {
         const clientId = this.getClientIdByPeer(peer);
         if (!clientId) {
             console.warn(`⚠️  无法处理玩家加入数据: 来自 ${peer.id}`);
@@ -160,8 +164,118 @@ export class WebSocketManager {
             return;
         }
 
-        console.log(`🎮 玩家加入: ${clientId}: ${params.player} (${params.uuid})`);
-        // 简化版本：移除复杂的玩家行为检查
+        console.log(`🎮 玩家加入: ${clientId}: ${params.player} (${params.uuid}) IP: ${params.ip}`);
+
+        try {
+            const { db } = await import('../database/client');
+            const { servers, players } = await import('../database/schema');
+            const { eq } = await import('drizzle-orm');
+            const { BindingConfigManager } = await import('../utils/config/bindingConfigManager');
+
+            // 通过 token 查找服务器 id
+            const client = this.clients.get(peer);
+            if (!client) return;
+            const serverRow = await db.select().from(servers).where(eq(servers.token, client.token)).limit(1);
+            if (!serverRow.length) return;
+            const serverId = serverRow[0].id;
+
+            // 1. 写入或更新玩家信息到数据库
+            const existingPlayer = await db.select().from(players).where(eq(players.uuid, params.uuid)).limit(1);
+
+            if (existingPlayer.length > 0) {
+                // 更新现有玩家信息
+                const player = existingPlayer[0];
+                const serverList = player.servers ? player.servers.split(',').filter(Boolean) : [];
+                const serverIdStr = serverId.toString();
+
+                // 确保当前服务器ID在列表中
+                if (!serverList.includes(serverIdStr)) {
+                    serverList.push(serverIdStr);
+                }
+
+                await db
+                    .update(players)
+                    .set({
+                        name: params.player,
+                        ip: params.ip,
+                        servers: serverList.join(','),
+                        updatedAt: new Date().toISOString()
+                    })
+                    .where(eq(players.uuid, params.uuid));
+
+                console.log(`📝 已更新玩家信息: ${params.player} (${params.uuid}) IP: ${params.ip}`);
+            } else {
+                // 创建新玩家记录
+                await db.insert(players).values({
+                    name: params.player,
+                    uuid: params.uuid,
+                    ip: params.ip,
+                    servers: serverId.toString(),
+                    socialAccountId: null
+                });
+
+                console.log(`✨ 已创建新玩家记录: ${params.player} (${params.uuid}) IP: ${params.ip}`);
+            }
+
+            // 2. 获取绑定配置并进行强制绑定校验
+            const bindingConfigManager = BindingConfigManager.getInstance(serverId);
+            const config = await bindingConfigManager.getConfig();
+            if (config && config.forceBind) {
+                // 重新查询玩家信息以获取最新的绑定状态
+                const playerRows = await db.select().from(players).where(eq(players.uuid, params.uuid)).limit(1);
+                const player = playerRows[0];
+                if (!player || !player.socialAccountId) {
+                    // 未绑定，生成验证码并踢出玩家
+                    try {
+                        // 动态导入绑定管理器
+                        const { bindingManager } = await import('~/utils/bindingManager');
+
+                        // 为玩家生成验证码（使用玩家UUID作为临时社交账号ID）
+                        const tempSocialId = `minecraft_${params.uuid}`;
+                        const bindingResult = await bindingManager.addPendingBinding(
+                            serverId,
+                            params.player,
+                            tempSocialId
+                        );
+
+                        let kickMessage = config.kickMsg;
+                        if (bindingResult.success && bindingResult.code) {
+                            // 替换消息模板中的占位符
+                            kickMessage = kickMessage
+                                .replace('#name', params.player)
+                                .replace('#cmd_prefix', `${config.prefix}`)
+                                .replace('#code', bindingResult.code)
+                                .replace('#time', `${config.codeExpire}分钟`);
+
+                            console.log(`🔐 为玩家 ${params.player} 生成绑定验证码: ${bindingResult.code}`);
+                        } else {
+                            kickMessage = kickMessage
+                                .replace('#name', params.player)
+                                .replace('#cmd_prefix', `${config.prefix}验证码`)
+                                .replace('#code', '验证码')
+                                .replace('#time', `${config.codeExpire}分钟`);
+
+                            console.log(`❌ 为玩家 ${params.player} 生成绑定验证码失败: ${bindingResult.message}`);
+                        }
+
+                        this.kickPlayerDirect(peer, params.player, kickMessage);
+                        console.log(`⛔ 玩家 ${params.player} 未绑定社交账号，已生成验证码并被踢出`);
+                    } catch (error) {
+                        console.error('生成绑定验证码失败:', error);
+                        const kickMessage = config.kickMsg
+                            .replace('#name', params.player)
+                            .replace('#cmd_prefix', `${config.prefix}验证码`)
+                            .replace('#code', '验证码')
+                            .replace('#time', `${config.codeExpire}分钟`);
+                        this.kickPlayerDirect(peer, params.player, kickMessage);
+                        console.log(`⛔ 玩家 ${params.player} 未绑定社交账号，验证码生成失败，已被踢出`);
+                    }
+                    return;
+                }
+            }
+        } catch (err) {
+            console.error('处理玩家加入事件时出错:', err);
+        }
     }
 
     handleDisconnection(peer: Peer<AdapterInternal>, code: number | undefined, reason: string | undefined) {

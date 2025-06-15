@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { RefreshOutline } from '@vicons/ionicons5';
 import type { SocialAccount } from '~/server/shared/types/account/account';
 import { useRequest } from 'alova/client';
 import { useMessage } from 'naive-ui';
@@ -21,21 +22,66 @@ const pageSize = ref(10);
 const accounts = ref<SocialAccount[]>([]);
 const loading = ref(true);
 const message = useMessage();
+const refreshTimer = ref<NodeJS.Timeout | null>(null);
+const lastUpdateTime = ref<string>('');
+const refreshing = ref(false);
 const pageSizeOptions = [5, 10, 20, 50].map((n) => ({ label: `${n}/页`, value: n }));
 
-useRequest(accountApi.getAccounts())
-  .onSuccess(({ data }) => {
-    if (data.success && data.data) accounts.value = data.data;
-    else accounts.value = [];
-    if (!data.success) message.error(data.message || '获取账号列表失败');
-  })
-  .onError(() => {
-    message.error('获取账号列表失败');
-    accounts.value = [];
-  })
-  .onComplete(() => {
-    loading.value = false;
-  });
+function getAccountList() {
+  useRequest(accountApi.getAccounts())
+    .onSuccess(({ data }) => {
+      if (data.success && data.data) {
+        accounts.value = data.data;
+        lastUpdateTime.value = new Date().toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      } else {
+        accounts.value = [];
+        if (!data.success) message.error(data.message || '获取账号列表失败');
+      }
+    })
+    .onError(() => {
+      message.error('获取账号列表失败');
+      accounts.value = [];
+    })
+    .onComplete(() => {
+      loading.value = false;
+    });
+}
+
+const handleRefresh = () => {
+  refreshing.value = true;
+  useRequest(accountApi.getAccounts())
+    .onSuccess(() => {
+      getAccountList();
+      message.success('刷新成功');
+    })
+    .onError(() => {
+      message.error('刷新失败');
+    })
+    .onComplete(() => {
+      refreshing.value = false;
+    });
+};
+
+onMounted(() => {
+  getAccountList();
+  refreshTimer.value = setInterval(() => {
+    getAccountList();
+  }, 1000);
+});
+
+onUnmounted(() => {
+  if (refreshTimer.value) {
+    clearInterval(refreshTimer.value);
+    refreshTimer.value = null;
+  }
+});
 
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase();
@@ -82,10 +128,38 @@ const columns = [
     <div class="accounts-page">
       <!-- 页面标题 -->
       <div class="page-header">
-        <n-text strong>
-          <h1>社交账号管理</h1>
-          <p>管理已绑定的社交账号，查看账号详细信息。</p>
-        </n-text>
+        <div class="head-text" :class="{ 'mobile-layout': isMobile }">
+          <div class="title-section">
+            <n-text strong>
+              <h1>社交账号管理</h1>
+              <p>管理已绑定的社交账号，查看账号详细信息。</p>
+              <p v-if="lastUpdateTime" class="last-update">最后更新: {{ lastUpdateTime }}</p>
+            </n-text>
+          </div>
+          <div class="action-section">
+            <n-space
+              :vertical="isMobile"
+              :size="isMobile ? 'small' : 'medium'"
+              :wrap="!isMobile"
+              :justify="isMobile ? 'center' : 'end'"
+            >
+              <n-button
+                noborder
+                :size="isMobile ? 'medium' : 'medium'"
+                :loading="refreshing"
+                :block="isMobile"
+                @click="handleRefresh"
+              >
+                <template #icon>
+                  <n-icon>
+                    <RefreshOutline />
+                  </n-icon>
+                </template>
+                刷新列表
+              </n-button>
+            </n-space>
+          </div>
+        </div>
       </div>
 
       <!-- 搜索和筛选区域 -->
@@ -176,8 +250,71 @@ const columns = [
 
 .page-header {
   margin-bottom: 24px;
-  /* 去除 text-align: center; 使内容左对齐 */
-  text-align: left;
+
+  .head-text {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+
+    &.mobile-layout {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+
+      .title-section {
+        text-align: center;
+      }
+
+      .action-section {
+        width: 100%;
+
+        :deep(.n-space) {
+          width: 100%;
+
+          &.n-space--vertical {
+            .n-space-item {
+              width: 100%;
+
+              .n-button {
+                width: 100%;
+                justify-content: center;
+              }
+            }
+          }
+
+          &:not(.n-space--vertical) {
+            justify-content: center;
+
+            .n-space-item {
+              flex: 1;
+
+              .n-button {
+                width: 100%;
+              }
+            }
+          }
+        }
+      }
+
+      h1 {
+        margin: 0;
+      }
+    }
+
+    p {
+      margin: 0;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .last-update {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+  }
 
   h1 {
     margin: 0 0 8px 0;

@@ -60,6 +60,14 @@ export default defineWebSocketHandler({
     },
 
     message(peer, message) {
+        const hasClient = wsManager.hasClient(peer as unknown as import('crossws').Peer<import('crossws').AdapterInternal>);
+
+        if (!hasClient) {
+            console.log('WebSocket 连接已断开，无法处理消息');
+            peer.close(4005, '连接已断开');
+            return;
+        }
+
         wsManager.handleMessage(
             peer as unknown as import('crossws').Peer<import('crossws').AdapterInternal>,
             message.text()

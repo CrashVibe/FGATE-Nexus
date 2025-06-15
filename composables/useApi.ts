@@ -2,7 +2,7 @@ import type {
     ApiResponse,
     ServerWithStatus,
     AdapterListResponse,
-    PlayerListResponse,
+    EnhancedPlayerListResponse,
     SocialAccountListResponse,
     ServerListResponse
 } from '~/server/shared/types/server/api';
@@ -31,7 +31,7 @@ export const useApi = () => {
     };
 
     const playerApi = {
-        getPlayers: () => $serverAPI.Get<PlayerListResponse>('/players/list')
+        getPlayers: () => $serverAPI.Get<EnhancedPlayerListResponse>('/players/list')
     };
 
     const accountApi = {

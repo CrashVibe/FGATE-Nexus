@@ -1,5 +1,5 @@
 import type { ServerStatus } from './status';
-import type { Player } from '../player/player';
+import type { Player, EnhancedPlayer } from '../player/player';
 import type { SocialAccount } from '../account/account';
 import type { Server } from './server';
 import type { AdapterUnionType } from '~/server/utils/adapters/adapterManager';
@@ -16,4 +16,5 @@ export type ServerWithStatus = Server & ServerStatus;
 export type ServerListResponse = ApiResponse<ServerStatus[]>;
 export type AdapterListResponse = ApiResponse<AdapterUnionType[]>;
 export type PlayerListResponse = ApiResponse<Player[]>;
+export type EnhancedPlayerListResponse = ApiResponse<EnhancedPlayer[]>;
 export type SocialAccountListResponse = ApiResponse<SocialAccount[]>;

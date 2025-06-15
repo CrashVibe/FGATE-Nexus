@@ -3,7 +3,10 @@
     <!-- 顶部导航栏 -->
     <n-layout-header bordered>
       <n-space justify="space-between" align="center" style="height: 100%">
-        <n-text strong>服务器管理系统</n-text>
+        <n-space align="center" style="align-items: center">
+          <n-avatar size="small" :src="'/favicon.ico'" style="width: 24px; height: 24px" />
+          <n-text strong>服务器管理系统</n-text>
+        </n-space>
         <!-- 手机端菜单按钮 -->
         <n-button v-if="isMobile" quaternary class="mobile-menu-button" @click="showMobileMenu = true">
           <template #icon>

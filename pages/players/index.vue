@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Player } from '~/server/shared/types/player/player';
+import { RefreshOutline } from '@vicons/ionicons5';
+import type { EnhancedPlayer } from '~/server/shared/types/player/player';
 import { useRequest } from 'alova/client';
 import { useMessage } from 'naive-ui';
 import { useBreakpoint, useMemo } from 'vooks';
@@ -19,30 +20,77 @@ const { playerApi } = useApi();
 const search = ref('');
 const page = ref(1);
 const pageSize = ref(10);
-const players = ref<Player[]>([]);
+const players = ref<EnhancedPlayer[]>([]);
 const loading = ref(true);
 const message = useMessage();
+const refreshTimer = ref<NodeJS.Timeout | null>(null);
+const lastUpdateTime = ref<string>('');
+const refreshing = ref(false);
 
-useRequest(playerApi.getPlayers())
-  .onSuccess(({ data }) => {
-    if (data.success && data.data) players.value = data.data;
-    else players.value = [];
-    if (!data.success) message.error(data.message || '获取玩家列表失败');
-  })
-  .onError(() => {
-    message.error('获取玩家列表失败');
-    players.value = [];
-  })
-  .onComplete(() => {
-    loading.value = false;
-  });
+function getPlayerList() {
+  useRequest(playerApi.getPlayers())
+    .onSuccess(({ data }) => {
+      if (data.success && data.data) {
+        players.value = data.data;
+        lastUpdateTime.value = new Date().toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      } else {
+        players.value = [];
+        if (!data.success) message.error(data.message || '获取玩家列表失败');
+      }
+    })
+    .onError(() => {
+      message.error('获取玩家列表失败');
+      players.value = [];
+    })
+    .onComplete(() => {
+      loading.value = false;
+    });
+}
+
+const handleRefresh = () => {
+  refreshing.value = true;
+  useRequest(playerApi.getPlayers())
+    .onSuccess(() => {
+      getPlayerList();
+      message.success('刷新成功');
+    })
+    .onError(() => {
+      message.error('刷新失败');
+    })
+    .onComplete(() => {
+      refreshing.value = false;
+    });
+};
+
+onMounted(() => {
+  getPlayerList();
+  refreshTimer.value = setInterval(() => {
+    getPlayerList();
+  }, 1000);
+});
+
+onUnmounted(() => {
+  if (refreshTimer.value) {
+    clearInterval(refreshTimer.value);
+    refreshTimer.value = null;
+  }
+});
 
 const pageSizeOptions = [5, 10, 20, 50].map((n) => ({ label: `${n}/页`, value: n }));
 
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase();
   if (!q) return players.value;
-  return players.value.filter((p) => p.name.toLowerCase().includes(q) || p.uuid.toLowerCase().includes(q));
+  return players.value.filter(
+    (p: EnhancedPlayer) => p.name.toLowerCase().includes(q) || p.uuid.toLowerCase().includes(q)
+  );
 });
 
 const paginated = computed(() => {
@@ -55,30 +103,45 @@ watch([search, pageSize], () => {
 });
 
 const columns = computed(() => [
-  { title: '玩家名', key: 'name', ellipsis: { tooltip: true }, minWidth: isMobile.value ? undefined : 120 },
-  { title: 'UUID', key: 'uuid', ellipsis: { tooltip: true }, width: isMobile.value ? undefined : 240 },
+  {
+    title: '玩家名',
+    key: 'name',
+    ellipsis: { tooltip: true },
+    minWidth: isMobile.value ? undefined : 120
+  },
+  {
+    title: 'UUID',
+    key: 'uuid',
+    ellipsis: { tooltip: true },
+    width: isMobile.value ? undefined : 320
+  },
   { title: 'IP', key: 'ip', width: isMobile.value ? undefined : 140 },
   {
     title: '社交账号',
-    key: 'socialAccounts',
-    width: isMobile.value ? undefined : 120,
-    render: (row: Player) => {
-      return row.socialAccountId ? 1 : 0;
+    key: 'socialAccountDisplay',
+    width: isMobile.value ? undefined : 200,
+    ellipsis: { tooltip: true },
+    render: (row: EnhancedPlayer) => {
+      return row.socialAccountDisplay;
     }
   },
   {
     title: '所在服务器',
-    key: 'servers',
-    width: isMobile.value ? undefined : 140,
-    render: (row: Player) => {
-      return row.servers?.length || 0;
+    key: 'serverNames',
+    width: isMobile.value ? undefined : 200,
+    ellipsis: { tooltip: true },
+    render: (row: EnhancedPlayer) => {
+      if (!row.serverNames || row.serverNames.length === 0) {
+        return '无';
+      }
+      return row.serverNames.join(', ');
     }
   },
   {
     title: '更新时间',
     key: 'updatedAt',
     width: isMobile.value ? undefined : 180,
-    render: (row: Player) => {
+    render: (row: EnhancedPlayer) => {
       if (!row.updatedAt) return '-';
       return new Date(row.updatedAt).toLocaleDateString('zh-CN');
     }
@@ -91,10 +154,38 @@ const columns = computed(() => [
     <div class="players-page">
       <!-- 页面标题 -->
       <div class="page-header">
-        <n-text strong>
-          <h1>玩家管理</h1>
-          <p>查看和管理服务器中的玩家信息。</p>
-        </n-text>
+        <div class="head-text" :class="{ 'mobile-layout': isMobile }">
+          <div class="title-section">
+            <n-text strong>
+              <h1>玩家管理</h1>
+              <p>查看和管理服务器中的玩家信息。</p>
+              <p v-if="lastUpdateTime" class="last-update">最后更新: {{ lastUpdateTime }}</p>
+            </n-text>
+          </div>
+          <div class="action-section">
+            <n-space
+              :vertical="isMobile"
+              :size="isMobile ? 'small' : 'medium'"
+              :wrap="!isMobile"
+              :justify="isMobile ? 'center' : 'end'"
+            >
+              <n-button
+                noborder
+                :size="isMobile ? 'medium' : 'medium'"
+                :loading="refreshing"
+                :block="isMobile"
+                @click="handleRefresh"
+              >
+                <template #icon>
+                  <n-icon>
+                    <RefreshOutline />
+                  </n-icon>
+                </template>
+                刷新列表
+              </n-button>
+            </n-space>
+          </div>
+        </div>
       </div>
 
       <!-- 搜索和筛选区域 -->
@@ -185,8 +276,71 @@ const columns = computed(() => [
 
 .page-header {
   margin-bottom: 24px;
-  /* 去除 text-align: center; 使内容左对齐 */
-  text-align: left;
+
+  .head-text {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+
+    &.mobile-layout {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+
+      .title-section {
+        text-align: center;
+      }
+
+      .action-section {
+        width: 100%;
+
+        :deep(.n-space) {
+          width: 100%;
+
+          &.n-space--vertical {
+            .n-space-item {
+              width: 100%;
+
+              .n-button {
+                width: 100%;
+                justify-content: center;
+              }
+            }
+          }
+
+          &:not(.n-space--vertical) {
+            justify-content: center;
+
+            .n-space-item {
+              flex: 1;
+
+              .n-button {
+                width: 100%;
+              }
+            }
+          }
+        }
+      }
+
+      h1 {
+        margin: 0;
+      }
+    }
+
+    p {
+      margin: 0;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .last-update {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+  }
 
   h1 {
     margin: 0 0 8px 0;

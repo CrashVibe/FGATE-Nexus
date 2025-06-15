@@ -1,13 +1,13 @@
 {
-    "version": "7",
-    "dialect": "sqlite",
-    "entries": [
-        {
-            "idx": 0,
-            "version": "6",
-            "when": 1749759040150,
-            "tag": "0000_premium_arachne",
-            "breakpoints": true
-        }
-    ]
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1749944808600,
+      "tag": "0000_third_jane_foster",
+      "breakpoints": true
+    }
+  ]
 }

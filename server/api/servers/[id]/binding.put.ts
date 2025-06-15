@@ -8,9 +8,22 @@ export default defineEventHandler(async (event): Promise<UpdateBindingConfigResp
         throw createError({ statusCode: 400, message: 'Invalid server ID' });
     }
 
-    const body = await readBody<UpdateBindingConfigRequest>(event);
-    const manager = BindingConfigManager.getInstance(serverId);
-    const updatedConfig = await manager.updateConfig(body);
+    try {
+        const body = await readBody<UpdateBindingConfigRequest>(event);
+        const manager = BindingConfigManager.getInstance(serverId);
+        const updatedConfig = await manager.updateConfig(body);
 
-    return { config: updatedConfig };
+        return { config: updatedConfig };
+    } catch (error) {
+        if (error instanceof Error) {
+            throw createError({
+                statusCode: 400,
+                message: error.message
+            });
+        }
+        throw createError({
+            statusCode: 500,
+            message: '更新配置失败'
+        });
+    }
 });

@@ -1,9 +1,10 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
+import { Adapter } from '../utils/adapters/core/types';
 
 export const adapters = sqliteTable('adapters', {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    type: text('type').notNull()
+    type: text('type', { enum: [Adapter.Onebot, Adapter.Discord] }).notNull()
 });
 
 export const servers = sqliteTable('servers', {
@@ -42,7 +43,7 @@ export const players = sqliteTable('players', {
 
 export const social_accounts = sqliteTable('social_accounts', {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    adapterType: text('adapter_type').notNull(),
+    adapterType: text('adapter_type', { enum: [Adapter.Onebot, Adapter.Discord, 'minecraft'] }).notNull(),
     name: text('name').notNull(),
     uiuid: text('uiuid').notNull(),
     createdAt: text('created_at')
@@ -63,9 +64,9 @@ export const server_binding_configs = sqliteTable('server_binding_configs', {
     codeExpire: integer('code_expire').notNull(),
     allowUnbind: integer('allow_unbind', { mode: 'boolean' }).notNull(),
     prefix: text('prefix').notNull(),
+    unbindPrefix: text('unbind_prefix').notNull(),
     forceBind: integer('force_bind', { mode: 'boolean' }).notNull(),
     kickMsg: text('kick_msg').notNull(),
-    trustKickMsg: text('trust_kick_msg').notNull(),
     unbindKickMsg: text('unbind_kick_msg').notNull(),
     bindSuccessMsg: text('bind_success_msg').notNull(),
     bindFailMsg: text('bind_fail_msg').notNull(),

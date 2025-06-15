@@ -38,6 +38,9 @@ export class BindingConfigManager {
     async updateConfig(
         config: Partial<Omit<ServerBindingConfig, 'server_id' | 'createdAt' | 'updatedAt'>>
     ): Promise<ServerBindingConfig> {
+        // 校验绑定和解绑指令不能相同
+        this.validatePrefixes(config);
+
         const existingConfig = await this.getConfig();
         if (existingConfig) {
             const [updatedConfig] = await db
@@ -52,6 +55,19 @@ export class BindingConfigManager {
                 .values({ ...(await loadDefaultConfig()), ...config, server_id: this.serverId })
                 .returning();
             return newConfig;
+        }
+    }
+
+    /**
+     * 校验前缀配置
+     */
+    private validatePrefixes(config: Partial<Omit<ServerBindingConfig, 'server_id' | 'createdAt' | 'updatedAt'>>) {
+        const prefix = config.prefix?.trim();
+        const unbindPrefix = config.unbindPrefix?.trim();
+
+        // 如果两个前缀都存在且相同，抛出错误
+        if (prefix && unbindPrefix && prefix === unbindPrefix) {
+            throw new Error('绑定前缀和解绑前缀不能相同');
         }
     }
 
