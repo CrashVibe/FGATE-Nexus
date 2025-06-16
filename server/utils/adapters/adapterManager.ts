@@ -96,7 +96,7 @@ class AdapterManager {
     }
 
     // 通过botId获取适配器配置（仅onebot）
-    async getAdapterByBotId(botId: number): Promise<AdapterUnionType | null> {
+    async getAdapterByBotId(botId: number): Promise<OnebotAdapterUnion | null> {
         const onebot = await db.select().from(onebotAdaptersTable).where(eq(onebotAdaptersTable.botId, botId)).get();
         if (!onebot) return null;
 

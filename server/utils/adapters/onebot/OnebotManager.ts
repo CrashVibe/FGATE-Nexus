@@ -2,6 +2,7 @@
 import type { Peer, AdapterInternal } from 'crossws';
 import { BaseAdapterManager, type AdapterConnection } from '../core/BaseAdapter';
 import { adapterManager } from '../adapterManager';
+import { Adapter } from '../core/types';
 
 interface OnebotConnection extends AdapterConnection {
     type: Adapter.Onebot;
@@ -331,11 +332,11 @@ class OnebotManager extends BaseAdapterManager {
                 peer.close(4001, 'X-Self-ID 必须是数字');
                 return false;
             }
-
             const adapter = await adapterManager.getAdapterByBotId(botId);
             // 假设 Adapter.Onebot 是一个有效的枚举成员或常量
-            if (!adapter || adapter.type !== Adapter.Onebot) {
+            if (!adapter?.detail?.enabled || adapter.type !== Adapter.Onebot) {
                 peer.close(4002, '适配器不存在或未启用');
+                console.error(`适配器不存在或未启用: ${botId}`);
                 return false;
             }
 
