@@ -99,7 +99,7 @@ export class WebSocketManager {
         }
     }
 
-    private handleRequest(peer: Peer<AdapterInternal>, request: JsonRpcRequest) {
+    private async handleRequest(peer: Peer<AdapterInternal>, request: JsonRpcRequest) {
         const client = this.clients.get(peer);
         if (!client) return;
 
@@ -114,7 +114,7 @@ export class WebSocketManager {
                     typeof (request.params as { uuid?: unknown }).uuid === 'string'
                 ) {
                     const params = request.params as { player: string; uuid: string; ip: string | null };
-                    this.handlePlayerJoin(peer, params);
+                    await this.handlePlayerJoin(peer, params, request.id ?? null);
                 } else {
                     this.sendError(peer, -32602, '参数无效', request.id ?? null);
                 }
@@ -151,16 +151,19 @@ export class WebSocketManager {
 
     private async handlePlayerJoin(
         peer: Peer<AdapterInternal>,
-        params: { player: string; uuid: string; ip: string | null }
+        params: { player: string; uuid: string; ip: string | null },
+        requestId: string | null
     ) {
         const clientId = this.getClientIdByPeer(peer);
         if (!clientId) {
             console.warn(`⚠️  无法处理玩家加入数据: 来自 ${peer.id}`);
+            this.sendError(peer, -32000, '无法找到客户端信息', requestId);
             return;
         }
 
         if (!params?.player || !params?.uuid) {
             console.warn(`⚠️  无法处理玩家加入数据: 来自 ${clientId}`);
+            this.sendError(peer, -32602, '玩家参数无效', requestId);
             return;
         }
 
@@ -174,9 +177,15 @@ export class WebSocketManager {
 
             // 通过 token 查找服务器 id
             const client = this.clients.get(peer);
-            if (!client) return;
+            if (!client) {
+                this.sendError(peer, -32000, '客户端信息丢失', requestId);
+                return;
+            }
             const serverRow = await db.select().from(servers).where(eq(servers.token, client.token)).limit(1);
-            if (!serverRow.length) return;
+            if (!serverRow.length) {
+                this.sendError(peer, -32000, '服务器配置未找到', requestId);
+                return;
+            }
             const serverId = serverRow[0].id;
 
             // 1. 写入或更新玩家信息到数据库
@@ -225,7 +234,7 @@ export class WebSocketManager {
                 const playerRows = await db.select().from(players).where(eq(players.uuid, params.uuid)).limit(1);
                 const player = playerRows[0];
                 if (!player || !player.socialAccountId) {
-                    // 未绑定，生成验证码并踢出玩家
+                    // 未绑定，生成验证码并回应踢出
                     try {
                         // 动态导入绑定管理器
                         const { bindingManager } = await import('~/utils/bindingManager');
@@ -258,8 +267,8 @@ export class WebSocketManager {
                             console.log(`❌ 为玩家 ${params.player} 生成绑定验证码失败: ${bindingResult.message}`);
                         }
 
-                        this.kickPlayerDirect(peer, params.player, kickMessage);
-                        console.log(`⛔ 玩家 ${params.player} 未绑定社交账号，已生成验证码并被踢出`);
+                        this.sendResponse(peer, requestId, { action: 'kick', reason: kickMessage });
+                        console.log(`⛔ 玩家 ${params.player} 未绑定社交账号，已生成验证码并回应踢出`);
                     } catch (error) {
                         console.error('生成绑定验证码失败:', error);
                         const kickMessage = config.kickMsg
@@ -267,14 +276,18 @@ export class WebSocketManager {
                             .replace('#cmd_prefix', `${config.prefix}验证码`)
                             .replace('#code', '验证码')
                             .replace('#time', `${config.codeExpire}分钟`);
-                        this.kickPlayerDirect(peer, params.player, kickMessage);
-                        console.log(`⛔ 玩家 ${params.player} 未绑定社交账号，验证码生成失败，已被踢出`);
+                        this.sendResponse(peer, requestId, { action: 'kick', reason: kickMessage });
+                        console.log(`⛔ 玩家 ${params.player} 未绑定社交账号，验证码生成失败，已回应踢出`);
                     }
                     return;
                 }
             }
+
+            // 允许玩家加入
+            this.sendResponse(peer, requestId, { action: 'allow' });
         } catch (err) {
             console.error('处理玩家加入事件时出错:', err);
+            this.sendError(peer, -32000, '处理玩家加入事件时出错', requestId);
         }
     }
 
