@@ -120,6 +120,20 @@ export class WebSocketManager {
                 }
                 break;
 
+            case 'player.bind':
+                if (
+                    typeof request.params === 'object' &&
+                    request.params !== null &&
+                    typeof (request.params as { playerName?: unknown }).playerName === 'string' &&
+                    typeof (request.params as { playerUUID?: unknown }).playerUUID === 'string'
+                ) {
+                    const params = request.params as { playerName: string; playerUUID: string };
+                    await this.handlePlayerBind(peer, params, request.id ?? null);
+                } else {
+                    this.sendError(peer, -32602, '参数无效', request.id ?? null);
+                }
+                break;
+
             case 'heartbeat':
                 if (!request.id) {
                     this.sendError(peer, -32600, '请求无效', null);
@@ -288,6 +302,67 @@ export class WebSocketManager {
         } catch (err) {
             console.error('处理玩家加入事件时出错:', err);
             this.sendError(peer, -32000, '处理玩家加入事件时出错', requestId);
+        }
+    }
+
+    private async handlePlayerBind(
+        peer: Peer<AdapterInternal>,
+        params: { playerName: string; playerUUID: string },
+        requestId: string | null
+    ) {
+        const clientId = this.getClientIdByPeer(peer);
+        if (!clientId) {
+            console.warn(`⚠️  无法处理玩家绑定请求: 来自 ${peer.id}`);
+            this.sendError(peer, -32000, '无法找到客户端信息', requestId);
+            return;
+        }
+
+        if (!params?.playerName || !params?.playerUUID) {
+            console.warn(`⚠️  无法处理玩家绑定请求: 来自 ${clientId}, 参数无效`);
+            this.sendError(peer, -32602, '玩家参数无效', requestId);
+            return;
+        }
+
+        console.log(`🔗 收到玩家绑定请求: ${clientId}: ${params.playerName} (${params.playerUUID})`);
+
+        try {
+            const { db } = await import('../database/client');
+            const { servers } = await import('../database/schema');
+            const { eq } = await import('drizzle-orm');
+
+            // 通过 token 查找服务器 id
+            const client = this.clients.get(peer);
+            if (!client) {
+                this.sendError(peer, -32000, '客户端信息丢失', requestId);
+                return;
+            }
+
+            const serverRow = await db.select().from(servers).where(eq(servers.token, client.token)).limit(1);
+            if (!serverRow.length) {
+                this.sendError(peer, -32000, '服务器配置未找到', requestId);
+                return;
+            }
+
+            const serverId = serverRow[0].id;
+
+            // 动态导入绑定管理器
+            const { bindingManager } = await import('~/utils/bindingManager');
+
+            // 为玩家生成验证码
+            const tempSocialId = `minecraft_${params.playerUUID}`;
+            const bindingResult = await bindingManager.addPendingBinding(serverId, params.playerName, tempSocialId);
+
+            if (bindingResult.success && bindingResult.code) {
+                // 返回验证码给客户端
+                this.sendResponse(peer, requestId, { authCode: bindingResult.code });
+                console.log(`🔐 为玩家 ${params.playerName} 生成绑定验证码: ${bindingResult.code}`);
+            } else {
+                this.sendError(peer, -32000, bindingResult.message || '生成验证码失败', requestId);
+                console.log(`❌ 为玩家 ${params.playerName} 生成绑定验证码失败: ${bindingResult.message}`);
+            }
+        } catch (err) {
+            console.error('处理玩家绑定请求时出错:', err);
+            this.sendError(peer, -32000, '处理玩家绑定请求时出错', requestId);
         }
     }
 
