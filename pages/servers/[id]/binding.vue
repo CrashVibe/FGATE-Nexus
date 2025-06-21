@@ -28,7 +28,13 @@
             <template #header-extra>
               <n-tag size="small" type="primary" round>必填信息</n-tag>
             </template>
-            <n-form v-if="form" :model="form" :rules="bindingFormRules" label-placement="top" :label-width="isMobile ? undefined : '120px'">
+            <n-form
+              v-if="form"
+              :model="form"
+              :rules="bindingFormRules"
+              label-placement="top"
+              :label-width="isMobile ? undefined : '120px'"
+            >
               <n-form-item label="绑定数量" path="maxBindCount">
                 <n-input-number
                   v-model:value="form.maxBindCount"
@@ -110,7 +116,13 @@
             <template #header-extra>
               <n-tag size="small" type="warning" round>可选</n-tag>
             </template>
-            <n-form v-if="form" :model="form" :rules="bindingFormRules" label-placement="top" :label-width="isMobile ? undefined : '120px'">
+            <n-form
+              v-if="form"
+              :model="form"
+              :rules="bindingFormRules"
+              label-placement="top"
+              :label-width="isMobile ? undefined : '120px'"
+            >
               <n-form-item label="强制绑定">
                 <div class="switch-wrapper">
                   <n-switch v-model:value="form.forceBind" />
@@ -125,6 +137,22 @@
                   show-count
                   placeholder="当玩家未绑定社交账号时显示的踢出消息，支持颜色代码"
                 />
+                <template #feedback>
+                  <div class="template-help">
+                    <n-space size="small" class="placeholder-tags">
+                      <n-tag size="tiny" type="default" @click="insertPlaceholder('kickMsg', '#name')">#name</n-tag>
+                      <n-tag size="tiny" type="default" @click="insertPlaceholder('kickMsg', '#cmd_prefix')"
+                        >#cmd_prefix</n-tag
+                      >
+                      <n-tag size="tiny" type="default" @click="insertPlaceholder('kickMsg', '#code')">#code</n-tag>
+                      <n-tag size="tiny" type="default" @click="insertPlaceholder('kickMsg', '#time')">#time</n-tag>
+                    </n-space>
+                    <div class="template-preview-inline">
+                      <n-text depth="3" size="small">预览: </n-text>
+                      <n-text type="warning" size="small">{{ kickMsgPreview }}</n-text>
+                    </div>
+                  </div>
+                </template>
               </n-form-item>
               <n-form-item label="解绑踢出消息" path="unbindKickMsg">
                 <n-input
@@ -135,6 +163,19 @@
                   show-count
                   placeholder="当玩家的社交账号被解绑时显示的踢出消息"
                 />
+                <template #feedback>
+                  <div class="template-help">
+                    <n-space size="small" class="placeholder-tags">
+                      <n-tag size="tiny" type="default" @click="insertPlaceholder('unbindKickMsg', '#social_account')"
+                        >#social_account</n-tag
+                      >
+                    </n-space>
+                    <div class="template-preview-inline">
+                      <n-text depth="3" size="small">预览: </n-text>
+                      <n-text type="warning" size="small">{{ unbindKickMsgPreview }}</n-text>
+                    </div>
+                  </div>
+                </template>
               </n-form-item>
             </n-form>
           </n-card>
@@ -143,38 +184,96 @@
         <!-- 反馈消息卡片 -->
         <n-gi>
           <n-card title="反馈消息配置" size="small" class="config-card">
-            <n-form v-if="form" :model="form" :rules="bindingFormRules" label-placement="top" :label-width="isMobile ? undefined : '120px'">
+            <n-form
+              v-if="form"
+              :model="form"
+              :rules="bindingFormRules"
+              label-placement="top"
+              :label-width="isMobile ? undefined : '120px'"
+            >
               <n-form-item label="绑定成功" path="bindSuccessMsg">
-                <n-input 
-                  v-model:value="form.bindSuccessMsg" 
+                <n-input
+                  v-model:value="form.bindSuccessMsg"
                   :maxlength="BINDING_CONSTRAINTS.bindSuccessMsg.maxLength"
                   show-count
-                  placeholder="绑定成功时的反馈消息，支持#user占位符" 
+                  placeholder="绑定成功时的反馈消息，支持#user占位符"
                 />
+                <template #feedback>
+                  <div class="template-help">
+                    <n-space size="small" class="placeholder-tags">
+                      <n-tag size="tiny" type="default" @click="insertPlaceholder('bindSuccessMsg', '#user')"
+                        >#user</n-tag
+                      >
+                    </n-space>
+                    <div class="template-preview-inline">
+                      <n-text depth="3" size="small">预览: </n-text>
+                      <n-text type="success" size="small">{{ bindSuccessMsgPreview }}</n-text>
+                    </div>
+                  </div>
+                </template>
               </n-form-item>
               <n-form-item label="绑定失败" path="bindFailMsg">
-                <n-input 
-                  v-model:value="form.bindFailMsg" 
+                <n-input
+                  v-model:value="form.bindFailMsg"
                   :maxlength="BINDING_CONSTRAINTS.bindFailMsg.maxLength"
                   show-count
-                  placeholder="绑定失败时的反馈消息" 
+                  placeholder="绑定失败时的反馈消息"
                 />
+                <template #feedback>
+                  <div class="template-help">
+                    <n-space size="small" class="placeholder-tags">
+                      <n-tag size="tiny" type="default" @click="insertPlaceholder('bindFailMsg', '#user')">#user</n-tag>
+                      <n-tag size="tiny" type="default" @click="insertPlaceholder('bindFailMsg', '#why')">#why</n-tag>
+                    </n-space>
+                    <div class="template-preview-inline">
+                      <n-text depth="3" size="small">预览: </n-text>
+                      <n-text type="error" size="small">{{ bindFailMsgPreview }}</n-text>
+                    </div>
+                  </div>
+                </template>
               </n-form-item>
               <n-form-item label="解绑成功" path="unbindSuccessMsg">
-                <n-input 
-                  v-model:value="form.unbindSuccessMsg" 
+                <n-input
+                  v-model:value="form.unbindSuccessMsg"
                   :maxlength="BINDING_CONSTRAINTS.unbindSuccessMsg.maxLength"
                   show-count
-                  placeholder="解绑成功时的反馈消息，支持#user占位符" 
+                  placeholder="解绑成功时的反馈消息，支持#user占位符"
                 />
+                <template #feedback>
+                  <div class="template-help">
+                    <n-space size="small" class="placeholder-tags">
+                      <n-tag size="tiny" type="default" @click="insertPlaceholder('unbindSuccessMsg', '#user')"
+                        >#user</n-tag
+                      >
+                    </n-space>
+                    <div class="template-preview-inline">
+                      <n-text depth="3" size="small">预览: </n-text>
+                      <n-text type="success" size="small">{{ unbindSuccessMsgPreview }}</n-text>
+                    </div>
+                  </div>
+                </template>
               </n-form-item>
               <n-form-item label="解绑失败" path="unbindFailMsg">
-                <n-input 
-                  v-model:value="form.unbindFailMsg" 
+                <n-input
+                  v-model:value="form.unbindFailMsg"
                   :maxlength="BINDING_CONSTRAINTS.unbindFailMsg.maxLength"
                   show-count
-                  placeholder="解绑失败时的反馈消息" 
+                  placeholder="解绑失败时的反馈消息"
                 />
+                <template #feedback>
+                  <div class="template-help">
+                    <n-space size="small" class="placeholder-tags">
+                      <n-tag size="tiny" type="default" @click="insertPlaceholder('unbindFailMsg', '#user')"
+                        >#user</n-tag
+                      >
+                      <n-tag size="tiny" type="default" @click="insertPlaceholder('unbindFailMsg', '#why')">#why</n-tag>
+                    </n-space>
+                    <div class="template-preview-inline">
+                      <n-text depth="3" size="small">预览: </n-text>
+                      <n-text type="error" size="small">{{ unbindFailMsgPreview }}</n-text>
+                    </div>
+                  </div>
+                </template>
               </n-form-item>
             </n-form>
           </n-card>
@@ -291,12 +390,7 @@ import ServerPageHeader from '~/components/Layout/ServerPageHeader.vue';
 import { useServerData } from '~/composables/useServerData';
 import { useBindingConfig } from '~/composables/useBindingConfig';
 import { useAdapterStatus } from '~/composables/useAdapterStatus';
-import { 
-  bindingFormRules, 
-  validators, 
-  BINDING_CONSTRAINTS, 
-  CODE_MODE_OPTIONS 
-} from '~/utils/validation/bindingRules';
+import { bindingFormRules, validators, BINDING_CONSTRAINTS, CODE_MODE_OPTIONS } from '~/utils/validation/bindingRules';
 import type { ServerBindingConfig } from '~/server/utils/config/bindingConfigManager';
 
 // 响应式断点检测
@@ -485,6 +579,101 @@ function discardChanges() {
   previewCode();
 }
 
+// 插入占位符到输入框
+function insertPlaceholder(fieldName: string, placeholder: string) {
+  if (!form.value) return;
+
+  // 只允许在特定的消息模板字段中插入占位符
+  const messageFields = [
+    'kickMsg',
+    'unbindKickMsg',
+    'bindSuccessMsg',
+    'bindFailMsg',
+    'unbindSuccessMsg',
+    'unbindFailMsg'
+  ];
+
+  if (!messageFields.includes(fieldName)) {
+    message.warning('该字段不支持占位符');
+    return;
+  }
+
+  const currentValue = (form.value[fieldName as keyof typeof form.value] as string) || '';
+
+  // 简单地在末尾添加占位符（可以根据需要改进为光标位置插入）
+  const newValue = currentValue + placeholder;
+
+  // 更新表单字段 - 直接使用字段名
+  switch (fieldName) {
+    case 'kickMsg':
+      form.value.kickMsg = newValue;
+      break;
+    case 'unbindKickMsg':
+      form.value.unbindKickMsg = newValue;
+      break;
+    case 'bindSuccessMsg':
+      form.value.bindSuccessMsg = newValue;
+      break;
+    case 'bindFailMsg':
+      form.value.bindFailMsg = newValue;
+      break;
+    case 'unbindSuccessMsg':
+      form.value.unbindSuccessMsg = newValue;
+      break;
+    case 'unbindFailMsg':
+      form.value.unbindFailMsg = newValue;
+      break;
+  }
+
+  message.success(`已插入占位符: ${placeholder}`);
+}
+
+// 消息模板预览计算属性
+const kickMsgPreview = computed(() => {
+  if (!form.value?.kickMsg) return '未设置踢出消息';
+
+  return form.value.kickMsg
+    .replace('#name', 'PlayerName')
+    .replace('#cmd_prefix', form.value.prefix || '/绑定 ')
+    .replace('#code', previewedCode.value || 'ABC123')
+    .replace('#time', `${form.value.codeExpire || 5}分钟`)
+    .replace(/&[0-9a-fk-or]/g, '') // 移除 Minecraft 颜色代码用于预览
+    .replace(/\n/g, ' '); // 换行转为空格用于预览
+});
+
+const unbindKickMsgPreview = computed(() => {
+  if (!form.value?.unbindKickMsg) return '未设置解绑踢出消息';
+
+  return form.value.unbindKickMsg
+    .replace('#social_account', '1234567890')
+    .replace(/&[0-9a-fk-or]/g, '') // 移除 Minecraft 颜色代码
+    .replace(/\n/g, ' ');
+});
+
+const bindSuccessMsgPreview = computed(() => {
+  if (!form.value?.bindSuccessMsg) return '未设置绑定成功消息';
+
+  return form.value.bindSuccessMsg.replace('#user', 'PlayerName');
+});
+
+const bindFailMsgPreview = computed(() => {
+  if (!form.value?.bindFailMsg) return '未设置绑定失败消息';
+
+  return form.value.bindFailMsg.replace('#user', 'PlayerName').replace('#why', '验证码已过期');
+});
+
+const unbindSuccessMsgPreview = computed(() => {
+  if (!form.value?.unbindSuccessMsg) return '未设置解绑成功消息';
+
+  return form.value.unbindSuccessMsg.replace('#user', 'PlayerName');
+});
+
+const unbindFailMsgPreview = computed(() => {
+  if (!form.value?.unbindFailMsg) return '未设置解绑失败消息';
+
+  return form.value.unbindFailMsg.replace('#user', 'PlayerName').replace('#why', '玩家不存在');
+});
+
 // 保存绑定配置
 async function saveBinding(): Promise<void> {
   if (!form.value) return;
@@ -517,7 +706,7 @@ async function saveBinding(): Promise<void> {
       } else {
         message.error(`配置保存失败：${error.message}`);
       }
-      
+
       // 特殊处理前缀冲突错误
       if (error.message.includes('绑定前缀和解绑前缀不能相同')) {
         prefixValidationError.value = '绑定前缀和解绑前缀不能相同';
@@ -750,16 +939,53 @@ async function saveBinding(): Promise<void> {
   }
 }
 
+/* 占位符提示样式 */
+.template-help {
+  margin-top: 8px;
+
+  .placeholder-tags {
+    margin-bottom: 6px;
+
+    .n-tag {
+      cursor: pointer;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 11px;
+      padding: 2px 6px;
+      transition: all 0.2s ease;
+      user-select: none;
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(24, 160, 88, 0.2);
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+
+  .template-preview-inline {
+    background: var(--code-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 12px;
+    line-height: 1.4;
+
+    .n-text {
+      font-family: inherit;
+    }
+  }
+}
+
 /* 移动端优化 */
 @media (max-width: 768px) {
   .binding-config {
-    /* 移动端使用单列布局 */
-    .dense-grid {
-      .n-gi {
-        .config-card {
-          border-radius: 8px;
-        }
-      }
+    .config-card {
+      border-radius: 8px;
     }
 
     .save-section {
@@ -778,12 +1004,8 @@ async function saveBinding(): Promise<void> {
 
 @media (max-width: 480px) {
   .binding-config {
-    .dense-grid {
-      .n-gi {
-        .config-card {
-          border-radius: 6px;
-        }
-      }
+    .config-card {
+      border-radius: 6px;
     }
 
     .save-section {

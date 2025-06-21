@@ -5,5 +5,6 @@ export interface GetClientInfoResult {
         minecraft_software: string;
         supports_papi: boolean;
         supports_rcon: boolean;
+        playerCount: number;
     };
 }

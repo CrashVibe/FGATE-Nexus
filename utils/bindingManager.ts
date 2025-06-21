@@ -1,5 +1,5 @@
 import type { ServerBindingConfig } from '~/server/utils/config/bindingConfigManager';
-import type { Adapter } from '~/server/utils/adapters/core/types';
+import { Adapter } from '~/server/utils/adapters/core/types';
 
 interface PendingBinding {
     serverId: number;
@@ -295,7 +295,7 @@ class BindingManager {
                 .where(eq(players.name, binding.playerId));
 
             console.log(
-                `✅ 绑定成功: 服务器${binding.serverId}, 玩家${binding.playerId}, 社交账号${binding.socialAccountId} -> ID:${socialAccountId}`
+                `[SUCCESS] 绑定成功: 服务器${binding.serverId}, 玩家${binding.playerId}, 社交账号${binding.socialAccountId} -> ID:${socialAccountId}`
             );
         } catch (error) {
             console.error('执行绑定操作失败:', error);
@@ -316,10 +316,28 @@ class BindingManager {
             const { social_accounts } = await import('~/server/database/schema');
             const { eq, and } = await import('drizzle-orm');
 
+            // 映射到数据库接受的类型
+            let dbAdapterType: typeof Adapter.Onebot | typeof Adapter.Discord | 'minecraft';
+            switch (adapterType) {
+                case Adapter.Onebot:
+                case Adapter.OnebotReverse:
+                case Adapter.OnebotForward:
+                    dbAdapterType = Adapter.Onebot;
+                    break;
+                case Adapter.Discord:
+                    dbAdapterType = Adapter.Discord;
+                    break;
+                default:
+                    dbAdapterType = 'minecraft';
+                    break;
+            }
+
             const existingAccounts = await db
                 .select()
                 .from(social_accounts)
-                .where(and(eq(social_accounts.uiuid, socialAccountUuid), eq(social_accounts.adapterType, adapterType)))
+                .where(
+                    and(eq(social_accounts.uiuid, socialAccountUuid), eq(social_accounts.adapterType, dbAdapterType))
+                )
                 .limit(1);
 
             if (existingAccounts.length > 0) {
@@ -460,7 +478,7 @@ class BindingManager {
                 .limit(1);
 
             if (socialAccountRows.length === 0) {
-                console.log(`❌ 解绑失败: 未找到社交账号 ${socialAccountUuid}`);
+                console.log(`[FAILED] 解绑失败: 未找到社交账号 ${socialAccountUuid}`);
                 return false;
             }
 
@@ -473,7 +491,7 @@ class BindingManager {
                 .limit(1);
 
             if (playerRows.length === 0) {
-                console.log(`❌ 解绑失败: 玩家 ${playerName} 未绑定到社交账号 ${socialAccountUuid}`);
+                console.log(`[FAILED] 解绑失败: 玩家 ${playerName} 未绑定到社交账号 ${socialAccountUuid}`);
                 return false;
             }
 
@@ -487,14 +505,14 @@ class BindingManager {
                 .returning();
 
             if (updateResult.length > 0) {
-                console.log(`✅ 解绑成功: 玩家 ${playerName} 已从社交账号 ${socialAccountUuid} 解绑`);
+                console.log(`[SUCCESS] 解绑成功: 玩家 ${playerName} 已从社交账号 ${socialAccountUuid} 解绑`);
                 return true;
             } else {
-                console.log(`❌ 解绑失败: 数据库更新失败`);
+                console.log(`[FAILED] 解绑失败: 数据库更新失败`);
                 return false;
             }
         } catch (error) {
-            console.error(`❌ 执行解绑操作失败:`, error);
+            console.error(`[FAILED] 执行解绑操作失败:`, error);
             return false;
         }
     }

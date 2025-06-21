@@ -459,7 +459,7 @@ onUnmounted(() => {
 
   /* 网格间距优化 */
   :deep(.n-grid) {
-    --n-gap: 12px;
+    gap: 12px;
   }
 }
 </style>

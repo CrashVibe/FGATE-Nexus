@@ -403,39 +403,48 @@ const columns = computed(() => [
 
   .page-header {
     margin-bottom: 16px;
+
     h1 {
       font-size: 20px;
     }
+
     p {
       font-size: 13px;
     }
   }
+
   .search-controls {
     margin-bottom: 16px;
   }
+
   :deep(.n-data-table) {
     .n-data-table-th,
     .n-data-table-td {
       padding: 8px 4px !important;
       font-size: 12px !important;
     }
+
     .n-data-table-th {
       font-weight: 600 !important;
     }
   }
 }
+
 @media (max-width: 480px) {
   .players-page {
     padding: 8px;
   }
+
   .page-header {
     h1 {
       font-size: 18px;
     }
+
     p {
       font-size: 12px;
     }
   }
+
   :deep(.n-data-table) {
     .n-data-table-th,
     .n-data-table-td {

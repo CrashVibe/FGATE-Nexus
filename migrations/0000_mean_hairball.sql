@@ -3,16 +3,44 @@ CREATE TABLE `adapters` (
 	`type` text NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE `message_filter_rules` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`server_id` integer NOT NULL,
+	`keyword` text NOT NULL,
+	`replacement` text DEFAULT '' NOT NULL,
+	`direction` text DEFAULT 'both' NOT NULL,
+	`match_mode` text DEFAULT 'contains' NOT NULL,
+	`enabled` integer DEFAULT true NOT NULL,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	FOREIGN KEY (`server_id`) REFERENCES `servers`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `message_queue` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`server_id` integer NOT NULL,
+	`content` text NOT NULL,
+	`direction` text NOT NULL,
+	`status` text DEFAULT 'pending' NOT NULL,
+	`retry_count` integer DEFAULT 0 NOT NULL,
+	`metadata` text DEFAULT '{}' NOT NULL,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	FOREIGN KEY (`server_id`) REFERENCES `servers`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
 CREATE TABLE `onebot_adapters` (
 	`adapter_id` integer PRIMARY KEY NOT NULL,
-	`bot_id` integer NOT NULL,
+	`bot_id` integer,
 	`access_token` text,
 	`response_timeout` integer NOT NULL,
 	`enabled` integer DEFAULT true NOT NULL,
+	`connection_type` text DEFAULT 'reverse' NOT NULL,
+	`forward_url` text,
+	`auto_reconnect` integer DEFAULT true,
 	FOREIGN KEY (`adapter_id`) REFERENCES `adapters`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `bot_id_idx` ON `onebot_adapters` (`bot_id`);--> statement-breakpoint
 CREATE TABLE `players` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
@@ -42,6 +70,19 @@ CREATE TABLE `server_binding_configs` (
 	`bind_fail_msg` text NOT NULL,
 	`unbind_success_msg` text NOT NULL,
 	`unbind_fail_msg` text NOT NULL,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	FOREIGN KEY (`server_id`) REFERENCES `servers`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `server_message_sync_configs` (
+	`server_id` integer PRIMARY KEY NOT NULL,
+	`enabled` integer DEFAULT false NOT NULL,
+	`mc_to_qq` integer DEFAULT true NOT NULL,
+	`qq_to_mc` integer DEFAULT true NOT NULL,
+	`group_ids` text DEFAULT '[]' NOT NULL,
+	`mc_to_qq_template` text DEFAULT '[{server}] {player}: {message}' NOT NULL,
+	`qq_to_mc_template` text DEFAULT '[QQ] {nickname}: {message}' NOT NULL,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	FOREIGN KEY (`server_id`) REFERENCES `servers`(`id`) ON UPDATE no action ON DELETE cascade

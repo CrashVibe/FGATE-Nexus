@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
         const wsManager = WebSocketManager.getInstance();
 
         // 添加在线状态信息
-        const serversWithStatus = result.map((server) => ({
+        const serversWithStatus = result.map((server: typeof servers.$inferSelect) => ({
             ...server,
             isOnline: wsManager.getPeerByToken(server.token)
         }));

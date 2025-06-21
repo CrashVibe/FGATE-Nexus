@@ -344,6 +344,14 @@ onUnmounted(() => {
   :deep(.n-divider) {
     margin: 1.5rem 0 1rem 0;
   }
+
+  :deep(.n-button) {
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+    }
+  }
 }
 
 // 响应式设计
@@ -380,14 +388,6 @@ onUnmounted(() => {
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(24, 160, 88, 0.3);
-  }
-}
-
-.quick-nav :deep(.n-button) {
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-1px);
   }
 }
 

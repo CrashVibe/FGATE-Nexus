@@ -25,6 +25,7 @@ export const useApi = () => {
 
     const adapterApi = {
         getAdapters: () => $serverAPI.Get<AdapterListResponse>('/adapters'),
+        getAdapter: (id: number) => $serverAPI.Get<ApiResponse<AdapterUnionType>>(`/adapters/${id}`),
         addAdapter: (data: AdapterPayload) => $serverAPI.Post<ApiResponse<void>>('/adapters', data),
         updateAdapter: (id: number, data: AdapterPayload) => $serverAPI.Put<ApiResponse<void>>(`/adapters/${id}`, data),
         deleteAdapter: (id: number) => $serverAPI.Delete<ApiResponse<void>>(`/adapters/${id}`)

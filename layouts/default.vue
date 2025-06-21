@@ -86,16 +86,16 @@ const menuOptions = computed(() => {
 });
 
 const selectedKey = computed(() => {
-  console.log('🔄 Default layout - Route changed to:', route.path);
+  console.log('[ROUTE] Default layout - Route changed to:', route.path);
   return route.path;
 });
 
 watch(
   () => route.path,
   (newPath) => {
-    console.log('🔄 Default layout - Route path changed:', newPath);
+    console.log('[ROUTE] Default layout - Route path changed:', newPath);
     nextTick(() => {
-      console.log('🔄 Default layout - Menu should be updated with:', newPath);
+      console.log('[ROUTE] Default layout - Menu should be updated with:', newPath);
     });
   }
 );

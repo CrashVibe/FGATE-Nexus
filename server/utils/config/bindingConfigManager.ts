@@ -67,17 +67,23 @@ export class BindingConfigManager {
 
         // 校验绑定数量
         if (config.maxBindCount !== undefined && !validators.maxBindCount(config.maxBindCount)) {
-            errors.push(`绑定数量必须在${BINDING_CONSTRAINTS.maxBindCount.min}-${BINDING_CONSTRAINTS.maxBindCount.max}之间`);
+            errors.push(
+                `绑定数量必须在${BINDING_CONSTRAINTS.maxBindCount.min}-${BINDING_CONSTRAINTS.maxBindCount.max}之间`
+            );
         }
 
         // 校验验证码长度
         if (config.codeLength !== undefined && !validators.codeLength(config.codeLength)) {
-            errors.push(`验证码长度必须在${BINDING_CONSTRAINTS.codeLength.min}-${BINDING_CONSTRAINTS.codeLength.max}之间`);
+            errors.push(
+                `验证码长度必须在${BINDING_CONSTRAINTS.codeLength.min}-${BINDING_CONSTRAINTS.codeLength.max}之间`
+            );
         }
 
         // 校验验证码过期时间
         if (config.codeExpire !== undefined && !validators.codeExpire(config.codeExpire)) {
-            errors.push(`验证码有效时间必须在${BINDING_CONSTRAINTS.codeExpire.min}-${BINDING_CONSTRAINTS.codeExpire.max}分钟之间`);
+            errors.push(
+                `验证码有效时间必须在${BINDING_CONSTRAINTS.codeExpire.min}-${BINDING_CONSTRAINTS.codeExpire.max}分钟之间`
+            );
         }
 
         // 校验验证码模式
@@ -118,27 +124,47 @@ export class BindingConfigManager {
         }
 
         if (config.unbindKickMsg !== undefined) {
-            const result = validators.messageLength(config.unbindKickMsg, BINDING_CONSTRAINTS.unbindKickMsg.maxLength, '解绑踢出消息');
+            const result = validators.messageLength(
+                config.unbindKickMsg,
+                BINDING_CONSTRAINTS.unbindKickMsg.maxLength,
+                '解绑踢出消息'
+            );
             if (!result.valid) errors.push(result.message!);
         }
 
         if (config.bindSuccessMsg !== undefined) {
-            const result = validators.messageLength(config.bindSuccessMsg, BINDING_CONSTRAINTS.bindSuccessMsg.maxLength, '绑定成功消息');
+            const result = validators.messageLength(
+                config.bindSuccessMsg,
+                BINDING_CONSTRAINTS.bindSuccessMsg.maxLength,
+                '绑定成功消息'
+            );
             if (!result.valid) errors.push(result.message!);
         }
 
         if (config.bindFailMsg !== undefined) {
-            const result = validators.messageLength(config.bindFailMsg, BINDING_CONSTRAINTS.bindFailMsg.maxLength, '绑定失败消息');
+            const result = validators.messageLength(
+                config.bindFailMsg,
+                BINDING_CONSTRAINTS.bindFailMsg.maxLength,
+                '绑定失败消息'
+            );
             if (!result.valid) errors.push(result.message!);
         }
 
         if (config.unbindSuccessMsg !== undefined) {
-            const result = validators.messageLength(config.unbindSuccessMsg, BINDING_CONSTRAINTS.unbindSuccessMsg.maxLength, '解绑成功消息');
+            const result = validators.messageLength(
+                config.unbindSuccessMsg,
+                BINDING_CONSTRAINTS.unbindSuccessMsg.maxLength,
+                '解绑成功消息'
+            );
             if (!result.valid) errors.push(result.message!);
         }
 
         if (config.unbindFailMsg !== undefined) {
-            const result = validators.messageLength(config.unbindFailMsg, BINDING_CONSTRAINTS.unbindFailMsg.maxLength, '解绑失败消息');
+            const result = validators.messageLength(
+                config.unbindFailMsg,
+                BINDING_CONSTRAINTS.unbindFailMsg.maxLength,
+                '解绑失败消息'
+            );
             if (!result.valid) errors.push(result.message!);
         }
 

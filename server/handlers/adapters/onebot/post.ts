@@ -3,23 +3,25 @@ import type { ApiResponse } from '~/server/shared/types/server/api';
 
 export async function handlePost(event: H3Event): Promise<ApiResponse<unknown>> {
     const body = await readBody(event);
-    if (!body.adapter_type || !body.config.botId) {
+    if (!body.adapter_type) {
         event.node.res.statusCode = 400;
-        if (!body.adapter_type) {
-            return {
-                success: false,
-                message: '缺少必填字段：adapter_type'
-            };
-        }
-        if (!body.config.botId) {
-            return {
-                success: false,
-                message: '缺少必填字段：botId'
-            };
-        }
+        return {
+            success: false,
+            message: '缺少必填字段：adapter_type'
+        };
     }
 
-    if (body.config.responseTimeout < 1000) {
+    // 反向连接需要 botId，正向连接不需要
+    const connectionType = body.config?.connectionType || 'reverse';
+    if (connectionType === 'reverse' && !body.config?.botId) {
+        event.node.res.statusCode = 400;
+        return {
+            success: false,
+            message: '反向连接模式下，缺少必填字段：botId'
+        };
+    }
+
+    if (body.config?.responseTimeout && body.config.responseTimeout < 1000) {
         event.node.res.statusCode = 400;
         return {
             success: false,
@@ -31,10 +33,13 @@ export async function handlePost(event: H3Event): Promise<ApiResponse<unknown>> 
     try {
         await adapterManager.createAdapter({
             adapterType: body.adapter_type,
-            botId: body.config.botId,
-            accessToken: body.config.accessToken?.trim() || null,
-            responseTimeout: body.config.responseTimeout || 6000,
-            enabled: body.config.enabled ?? true
+            botId: connectionType === 'reverse' ? body.config.botId : null, // 正向连接时为 null
+            connectionType: connectionType as 'reverse' | 'forward',
+            forwardUrl: body.config?.forwardUrl?.trim() || null,
+            autoReconnect: body.config?.autoReconnect ?? true,
+            accessToken: body.config?.accessToken?.trim() || null,
+            responseTimeout: body.config?.responseTimeout || 6000,
+            enabled: body.config?.enabled ?? true
         });
 
         return {

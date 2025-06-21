@@ -21,11 +21,11 @@ export const BINDING_CONSTRAINTS = {
  * 验证码模式选项
  */
 export const CODE_MODE_OPTIONS = [
-  { label: '大小写单词和数字', value: 'mix' },
-  { label: '纯数字', value: 'number' },
-  { label: '纯单词(大小写)', value: 'word' },
-  { label: '纯单词(大写)', value: 'upper' },
-  { label: '纯单词(小写)', value: 'lower' }
+    { label: '大小写单词和数字', value: 'mix' },
+    { label: '纯数字', value: 'number' },
+    { label: '纯单词(大小写)', value: 'word' },
+    { label: '纯单词(大写)', value: 'upper' },
+    { label: '纯单词(小写)', value: 'lower' }
 ];
 
 /**

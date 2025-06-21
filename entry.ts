@@ -19,7 +19,7 @@ async function initDatabase() {
     if (isNewDatabase) {
         console.log('🔧 数据库不存在，正在初始化...');
     } else {
-        console.log('🔄 检查并执行数据库迁移...');
+        console.log('[MIGRATION] 检查并执行数据库迁移...');
     }
 
     try {
@@ -27,7 +27,7 @@ async function initDatabase() {
             migrationsFolder: path.resolve('./migrations')
         });
 
-        console.log('✅ 数据库准备就绪');
+        console.log('[SUCCESS] 数据库准备就绪');
     } catch (e) {
         console.error('数据库迁移失败:', e);
         process.exit(1);

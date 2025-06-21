@@ -62,7 +62,7 @@ export abstract class BaseAdapterManager {
 
     // 获取指定类型的所有连接
     protected getConnectionsByType(type: string): AdapterConnection[] {
-        return Array.from(this.connections.values()).filter(conn => conn.type === type);
+        return Array.from(this.connections.values()).filter((conn) => conn.type === type);
     }
 
     // 获取所有连接

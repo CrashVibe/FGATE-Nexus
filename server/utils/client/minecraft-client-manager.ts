@@ -22,7 +22,7 @@ export class MinecraftClientManager {
             })
             .where(eq(servers.token, client.token))
             .execute();
-        console.log(`📊 Updated client ${peer.id}:`, client.serverInfo);
+        console.log(`[INFO] Updated client ${peer.id}:`, client.serverInfo);
     }
 
     // 移除客户端
@@ -92,7 +92,7 @@ export class MinecraftClientManager {
         this.clients.forEach((client, clientId) => {
             if (!client.isAlive && now - client.lastPing > maxAge) {
                 this.clients.delete(clientId);
-                console.log(`🗑️  Cleaned up expired client: ${clientId}`);
+                console.log(`[CLEANUP] Cleaned up expired client: ${clientId}`);
             }
         });
     }

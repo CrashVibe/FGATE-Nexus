@@ -60,7 +60,14 @@
 
 <script setup lang="ts">
 import { useBreakpoint, useMemo } from 'vooks';
-import { MenuOutline, SettingsOutline, LinkOutline, BuildOutline, ArrowBackOutline } from '@vicons/ionicons5';
+import {
+  MenuOutline,
+  SettingsOutline,
+  LinkOutline,
+  BuildOutline,
+  ArrowBackOutline,
+  ChatbubbleOutline
+} from '@vicons/ionicons5';
 import { useRouter, useRoute, type RouteLocationAsPathGeneric } from 'vue-router';
 import { ref, computed, h, provide, onUnmounted, onMounted } from 'vue';
 import { useDialog, NIcon } from 'naive-ui';
@@ -164,6 +171,12 @@ const menuOptions = computed(() => {
       key: `/servers/${serverId}/binding`,
       icon: () => h(NIcon, null, { default: () => h(LinkOutline) }),
       desc: '设置社交账号与游戏账号的绑定规则。'
+    });
+    menu.push({
+      label: '消息互通',
+      key: `/servers/${serverId}/message-sync`,
+      icon: () => h(NIcon, null, { default: () => h(ChatbubbleOutline) }),
+      desc: 'Minecraft 与 QQ 群消息双向同步配置。'
     });
     menu.push({
       label: '高级配置',

@@ -132,6 +132,11 @@ const getCardSpan = (title: string) => {
 
   &:hover {
     transform: translateY(-2px);
+
+    :deep(.n-card__header-extra .n-icon) {
+      transform: scale(1.1);
+      color: var(--n-primary-color-hover);
+    }
   }
 
   &:active {
@@ -141,11 +146,6 @@ const getCardSpan = (title: string) => {
   :deep(.n-card__header-extra .n-icon) {
     color: var(--n-primary-color);
     transition: all 0.2s var(--n-bezier);
-  }
-
-  &:hover :deep(.n-card__header-extra .n-icon) {
-    transform: scale(1.1);
-    color: var(--n-primary-color-hover);
   }
 }
 
@@ -158,10 +158,8 @@ const getCardSpan = (title: string) => {
     margin-top: 40px;
   }
 
-  .config-card {
-    &:hover {
-      transform: translateY(-1px);
-    }
+  .config-card:hover {
+    transform: translateY(-1px);
   }
 }
 
@@ -170,10 +168,8 @@ const getCardSpan = (title: string) => {
     margin-top: 30px;
   }
 
-  .config-card {
-    &:hover {
-      transform: none;
-    }
+  .config-card:hover {
+    transform: none;
   }
 }
 </style>

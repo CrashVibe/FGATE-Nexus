@@ -26,7 +26,7 @@ const themeOverrides = {
 const loadingBarRef = ref();
 
 onMounted(() => {
-  console.log('🎯 App mounted');
+  console.log('[APP] App mounted');
 
   const router = useRouter();
   let isNavigating = false;
@@ -40,7 +40,7 @@ onMounted(() => {
             return true;
           }
         } catch (error) {
-          console.warn(`⚠️ Error calling loadingBar.${method}:`, error);
+          console.warn(`[WARNING] Error calling loadingBar.${method}:`, error);
         }
         return false;
       };
@@ -63,7 +63,7 @@ onMounted(() => {
       });
 
       router.onError((error) => {
-        console.error('❌ Router error:', error);
+        console.error('[FAILED] Router error:', error);
         safeCall('error');
         isNavigating = false;
       });

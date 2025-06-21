@@ -1,342 +1,368 @@
 <template>
-  <n-card hoverable bordered class="adapter-card" @click="onCardClick">
-    <div class="card-content">
-      <transition name="fade-slide-zoom" mode="out-in">
-        <div v-if="isEditing" key="edit">
-          <n-form label-placement="left" label-width="auto" @submit.prevent>
-            <n-form-item label="机器人 ID">
-              <n-input-number v-model:value="editForm.botId" />
-            </n-form-item>
-            <n-form-item label="响应超时（毫秒）">
-              <n-input-number v-model:value="editForm.responseTimeout" :min="1000" />
-            </n-form-item>
-            <n-form-item label="验证令牌" class="token-section">
-              <n-input
-                v-model:value="editForm.accessToken"
-                :type="showToken ? 'text' : 'password'"
-                clearable
-                placeholder="请输入验证令牌"
-              >
-                <template #suffix>
-                  <n-icon
-                    :component="showToken ? EyeOutline : EyeOff"
-                    style="cursor: pointer"
-                    @click.stop="showToken = !showToken"
-                  />
-                </template>
-              </n-input>
-            </n-form-item>
-            <n-form-item label="启用适配器" :show-feedback="false">
-              <n-switch v-model:value="editForm.enabled" />
-            </n-form-item>
-            <div class="button-row" :class="{ 'mobile-layout': isMobile }">
-              <n-button
-                type="primary"
-                :loading="loading"
-                :size="isMobile ? 'small' : 'medium'"
-                :block="isMobile"
-                @click.stop="saveEdit"
-              >
-                保存
-              </n-button>
-              <n-button
-                secondary
-                :disabled="loading"
-                :size="isMobile ? 'small' : 'medium'"
-                :block="isMobile"
-                @click.stop="cancelEdit"
-              >
-                取消
-              </n-button>
-              <n-button
-                type="error"
-                :loading="loading"
-                :size="isMobile ? 'small' : 'medium'"
-                :block="isMobile"
-                @click.stop="deleteAdapter"
-              >
-                删除
-              </n-button>
-            </div>
-          </n-form>
+  <n-card hoverable bordered class="onebot-card" @click="handleCardClick">
+    <div class="card-header">
+      <div class="bot-info">
+        <n-icon size="24">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+            />
+          </svg>
+        </n-icon>
+        <div class="bot-details">
+          <h3 class="bot-name">
+            {{ adapter.detail?.connectionType === 'forward' ? `适配器 ${adapter.id}` : `Bot ${adapter.detail?.botId}` }}
+          </h3>
+          <p class="bot-type">OneBot V11 ({{ adapter.detail?.connectionType === 'forward' ? '正向' : '反向' }})</p>
+        </div>
+      </div>
+
+      <div class="status-badges">
+        <n-tag :type="statusType" size="small" round>
+          {{ statusText }}
+        </n-tag>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="connection-info">
+        <div class="info-item">
+          <span class="info-label">连接方式</span>
+          <n-tag :type="adapter.detail?.connectionType === 'forward' ? 'warning' : 'info'" size="small" round>
+            {{ adapter.detail?.connectionType === 'forward' ? '正向连接' : '反向连接' }}
+          </n-tag>
         </div>
 
-        <div v-else key="view">
-          <div class="header">
-            <n-text strong class="adapter-name"> OneBot V11 </n-text>
-            <n-tag :bordered="false" :type="adapter.detail?.enabled ? 'success' : 'error'" size="small">
-              {{ adapter.detail?.enabled ? '启用' : '禁用' }}
-            </n-tag>
-          </div>
+        <div class="info-item">
+          <span class="info-label">响应超时</span>
+          <span class="info-value">
+            {{ adapter.detail?.responseTimeout != null ? (adapter.detail.responseTimeout / 1000).toFixed(1) : '-' }}s
+          </span>
+        </div>
 
-          <div class="info-item">
-            <n-text depth="2">机器人ID：</n-text>
-            <n-text>{{ adapter.detail?.botId }}</n-text>
-          </div>
-
-          <div class="info-item">
-            <n-text depth="2">响应超时：</n-text>
-            <n-text
-              >{{
-                adapter.detail?.responseTimeout != null ? (adapter.detail.responseTimeout / 1000).toFixed(1) : '-'
-              }}
-              秒</n-text
-            >
-          </div>
-
-          <div class="info-item">
-            <n-text depth="2">验证令牌：</n-text>
-            <n-text @click.stop="showToken = !showToken">
-              {{
-                adapter.detail?.accessToken
-                  ? showToken
-                    ? adapter.detail?.accessToken
-                    : '***'.repeat(16 / 3)
-                  : '无密钥'
-              }}
-              <n-icon
-                v-if="adapter.detail?.accessToken"
-                :component="showToken ? EyeOutline : EyeOff"
-                style="margin-left: 4px"
-              />
-            </n-text>
-          </div>
-
-          <div class="info-item">
-            <n-text depth="2">连接状态：</n-text>
-            <n-tag :bordered="false" :type="adapter.connected ? 'success' : 'error'" size="small">
-              {{ adapter.connected ? '已连接' : '未连接' }}
-            </n-tag>
-          </div>
-
-          <!-- 新增底部提示 -->
-          <div class="card-footer-tip">
-            <n-text depth="3" style="font-size: 12px; opacity: 0.7; user-select: none"> 点击卡片可编辑 </n-text>
+        <div v-if="adapter.detail?.accessToken" class="info-item token-item">
+          <span class="info-label">访问令牌</span>
+          <div class="token-display" @click.stop="showToken = !showToken">
+            <span class="token-value">
+              {{ showToken ? adapter.detail.accessToken : '●●●●●●●●' }}
+            </span>
+            <n-icon :component="showToken ? EyeOutline : EyeOff" size="14" class="token-icon" />
           </div>
         </div>
-      </transition>
+      </div>
+    </div>
+
+    <div class="card-footer" @click.stop>
+      <div class="action-buttons">
+        <n-button
+          :type="adapter.detail?.enabled ? 'warning' : 'primary'"
+          size="small"
+          :loading="toggleLoading"
+          class="toggle-btn"
+          @click="toggleAdapter"
+        >
+          {{ adapter.detail?.enabled ? '禁用' : '启用' }}
+        </n-button>
+
+        <n-button type="error" size="small" :loading="deleteLoading" class="delete-btn" @click="deleteAdapter">
+          删除
+        </n-button>
+      </div>
     </div>
   </n-card>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { useMessage, useDialog } from 'naive-ui';
 import type { OnebotAdapterUnion } from '~/server/shared/types/adapters/adapter';
 import { EyeOutline, EyeOff } from '@vicons/ionicons5';
 import { useRequest } from 'alova/client';
-import { useBreakpoint, useMemo } from 'vooks';
-
-// 响应式断点检测
-function useIsMobile() {
-  const breakpointRef = useBreakpoint();
-  return useMemo(() => {
-    return breakpointRef.value === 'xs' || breakpointRef.value === 's';
-  });
-}
-
-const isMobile = useIsMobile();
-const { $serverAPI } = useNuxtApp();
 
 const props = defineProps<{
   adapter: OnebotAdapterUnion;
 }>();
 
+const emit = defineEmits<{
+  update: [];
+  delete: [];
+  'editing-change': [adapterId: number, isEditing: boolean];
+  click: [];
+}>();
+
+const { adapterApi } = useApi();
 const message = useMessage();
 const dialog = useDialog();
 
 const showToken = ref(false);
-const isEditing = ref(false);
-const loading = ref(false);
+const toggleLoading = ref(false);
+const deleteLoading = ref(false);
 
-// 这里保持和接口一致，enabled而非switch
-const editForm = ref({
-  adapter_type: 'onebot',
-  accessToken: props.adapter.detail?.accessToken || '',
-  botId: props.adapter.detail?.botId,
-  responseTimeout: props.adapter.detail?.responseTimeout,
-  enabled: props.adapter.detail?.enabled
+// 状态相关的计算属性
+const statusType = computed(() => {
+  const enabled = props.adapter.detail?.enabled;
+  const connected = props.adapter.connected;
+
+  if (enabled && connected) return 'success';
+  if (enabled && !connected) return 'warning';
+  return 'error';
 });
 
-watch(
-  () => props.adapter,
-  (newVal) => {
-    // 如果正在编辑，不更新表单数据
-    if (isEditing.value) return;
+const statusText = computed(() => {
+  const enabled = props.adapter.detail?.enabled;
+  const connected = props.adapter.connected;
 
-    editForm.value = {
-      adapter_type: 'onebot',
-      accessToken: newVal.detail?.accessToken || '',
-      botId: newVal.detail?.botId,
-      responseTimeout: newVal.detail?.responseTimeout,
-      enabled: newVal.detail?.enabled
-    };
-  },
-  { immediate: true, deep: true }
-);
+  if (enabled && connected) return '运行中';
+  if (enabled && !connected) return '已启用';
+  return '已禁用';
+});
 
-function onCardClick(event: MouseEvent) {
-  const target = event.target as HTMLElement;
-  if (target.closest('.token-section')) return; // 点击令牌区域不进入编辑
-  if (isEditing.value) return;
-  isEditing.value = true;
-  emit('editing-change', props.adapter.id, true);
+// 处理卡片点击 - 发出事件让父组件处理跳转
+function handleCardClick() {
+  emit('click');
 }
 
-const emit = defineEmits<{
-  (e: 'update', data: OnebotAdapterUnion): void;
-  (e: 'delete', id: number): void;
-  (e: 'editing-change', adapterId: number, isEditing: boolean): void;
-}>();
+// 切换启用/禁用状态
+function toggleAdapter() {
+  toggleLoading.value = true;
+  const newEnabled = !props.adapter.detail?.enabled;
 
-async function saveEdit() {
-  loading.value = true;
-  useRequest($serverAPI.Put(`/adapters/${props.adapter.id}`, editForm.value))
-    .onSuccess((response) => {
-      const data = response.data as { success: boolean; message: string };
-      if (data.success) {
-        message.success(data.message || '适配器更新成功');
-      } else {
-        message.error(data.message || '提交适配器失败');
-      }
-      isEditing.value = false;
-      emit('editing-change', props.adapter.id, false);
-      emit('update', {
-        ...props.adapter,
-        ...editForm.value
-      });
+  // 确保包含所有当前配置，只更新 enabled 字段
+  const currentConfig = {
+    botId: props.adapter.detail?.botId || null,
+    accessToken: props.adapter.detail?.accessToken || null,
+    responseTimeout: props.adapter.detail?.responseTimeout || 6000,
+    enabled: newEnabled,
+    connectionType: props.adapter.detail?.connectionType || 'reverse',
+    forwardUrl: props.adapter.detail?.forwardUrl || null,
+    autoReconnect: props.adapter.detail?.autoReconnect ?? true
+  };
+
+  console.log('切换适配器状态:', { id: props.adapter.id, newEnabled, config: currentConfig });
+
+  useRequest(
+    adapterApi.updateAdapter(props.adapter.id, {
+      adapter_type: 'onebot',
+      config: currentConfig
     })
-    .onError((err) => {
-      message.error(`提交适配器失败：${err.error || '未知错误'}`);
+  )
+    .onSuccess(({ data }) => {
+      if (data.success) {
+        message.success(`适配器已${newEnabled ? '启用' : '禁用'}`);
+        emit('update');
+      } else {
+        message.error(data.message || '操作失败');
+      }
+    })
+    .onError(() => {
+      message.error('操作失败');
     })
     .onComplete(() => {
-      loading.value = false;
+      toggleLoading.value = false;
     });
 }
 
-function cancelEdit() {
-  isEditing.value = false;
-  emit('editing-change', props.adapter.id, false);
-}
-
+// 删除适配器
 function deleteAdapter() {
+  const displayName =
+    props.adapter.detail?.connectionType === 'forward'
+      ? `适配器 ${props.adapter.id}`
+      : `机器人 ${props.adapter.detail?.botId}`;
+
   dialog.warning({
     title: '确认删除',
-    content: '您确定要删除这个适配器吗？',
-    positiveText: '删除',
+    content: `确定要删除${displayName}吗？此操作不可撤销。`,
+    positiveText: '确定删除',
     negativeText: '取消',
     onPositiveClick: () => {
-      loading.value = true;
-      useRequest($serverAPI.Delete(`/adapters/${props.adapter.id}`))
-        .onSuccess((response) => {
-          const data = response.data as { success: boolean; message: string };
+      deleteLoading.value = true;
+
+      useRequest(adapterApi.deleteAdapter(props.adapter.id))
+        .onSuccess(({ data }) => {
           if (data.success) {
-            message.success(data.message || '适配器删除成功');
-            emit('delete', props.adapter.id);
+            message.success('适配器已删除');
+            emit('delete');
           } else {
-            message.error(data.message || '删除适配器失败');
+            message.error(data.message || '删除失败');
           }
         })
-        .onError((err) => {
-          message.error(`删除适配器失败：${err.error || '未知错误'}`);
+        .onError(() => {
+          message.error('删除失败');
         })
         .onComplete(() => {
-          loading.value = false;
+          deleteLoading.value = false;
         });
     }
   });
 }
 </script>
 
-<style scoped>
-.adapter-card {
-  width: 100%;
-  transition: transform 0.3s;
+<style scoped lang="less">
+.onebot-card {
   cursor: pointer;
-  transition:
-    box-shadow 0.2s,
-    border-color 0.2s,
-    background 0.2s;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
 }
 
-.adapter-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.13);
-  border-color: #409eff;
-  background: rgba(64, 158, 255, 0.04);
-}
-
-.card-content {
-  padding: 4px;
-}
-
-.header {
+.card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
 }
 
-.adapter-name {
-  font-size: 18px;
-  font-weight: 500;
-}
-
-.info-item {
-  margin-bottom: 8px;
-}
-
-.token-section {
-  cursor: pointer;
-}
-
-.token-text {
-  display: inline-block;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.button-row {
-  margin-top: 16px;
+.bot-info {
   display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.bot-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.bot-name {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bot-type {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badges {
+  flex-shrink: 0;
+}
+
+.card-body {
+  margin-bottom: 16px;
+}
+
+.connection-info {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
-.mobile-layout {
-  flex-direction: column;
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--n-color);
+  border-radius: 6px;
+  border: 1px solid var(--n-border-color);
+
+  &.token-item {
+    cursor: pointer;
+  }
 }
 
-.clickable-icon {
-  color: #409eff;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-  vertical-align: middle;
+.info-label {
+  font-size: 13px;
+  opacity: 0.8;
+  font-weight: 500;
 }
 
-.card-footer-tip {
-  margin-top: 8px;
-  text-align: right;
+.info-value {
+  font-size: 13px;
+  font-weight: 500;
 }
 
-/* 卡片内容过渡动画 */
-.fade-slide-zoom-enter-active,
-.fade-slide-zoom-leave-active {
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+.token-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+
+  .token-value {
+    font-family: monospace;
+    font-size: 12px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .token-icon {
+    opacity: 0.6;
+  }
 }
 
-.fade-slide-zoom-enter-from {
-  opacity: 0;
-  transform: translateY(-15px) scale(0.95);
+.card-footer {
+  border-top: 1px solid var(--n-border-color);
+  padding-top: 16px;
+  margin-top: 16px;
 }
 
-.fade-slide-zoom-leave-to {
-  opacity: 0;
-  transform: translateY(15px) scale(0.95);
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
-.fade-slide-zoom-enter-to,
-.fade-slide-zoom-leave-from {
-  opacity: 1;
-  transform: translateY(0) scale(1);
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .card-header {
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .bot-info {
+    width: 100%;
+  }
+
+  .status-badges {
+    align-self: flex-start;
+  }
+
+  .info-item {
+    padding: 6px 10px;
+  }
+
+  .info-label,
+  .info-value {
+    font-size: 12px;
+  }
+
+  .action-buttons {
+    justify-content: stretch;
+  }
+
+  .toggle-btn,
+  .delete-btn {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .bot-name {
+    font-size: 15px;
+  }
+
+  .connection-info {
+    gap: 6px;
+  }
+
+  .card-footer {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
 }
 </style>

@@ -3,6 +3,9 @@ export interface OneBotConfig {
     accessToken: string | null;
     responseTimeout: number;
     enabled: boolean;
+    connectionType?: 'reverse' | 'forward';
+    forwardUrl?: string | null;
+    autoReconnect?: boolean;
 }
 
 export interface AdapterFormData {

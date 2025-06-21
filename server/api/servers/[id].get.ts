@@ -40,13 +40,25 @@ export default defineEventHandler(async (event) => {
         try {
             const wsManager = WebSocketManager.getInstance();
             const status = await wsManager.getServerStatus(serverId);
+            if (!status) {
+                console.warn('No status found for server:', serverId);
+                // 使用默认状态，不抛出错误
+                return {
+                    success: true,
+                    message: '获取服务器信息成功，但未找到在线状态',
+                    data: {
+                        ...server[0],
+                        ...serverStatus
+                    }
+                };
+            }
             serverStatus = {
-                isOnline: status.isOnline,
+                isOnline: status.isAlive || false,
                 playerCount: status.playerCount || 0,
-                lastSeen: status.lastSeen,
-                supportsRcon: status.supportsRcon || false,
-                software: status.software || server[0].software || 'Unknown',
-                version: status.version || server[0].version || 'Unknown'
+                lastSeen: status.lastPing ? new Date(status.lastPing) : null,
+                supportsRcon: status.serverInfo?.supports_rcon || false,
+                software: status.serverInfo?.server_type || server[0].software || 'Unknown',
+                version: status.serverInfo?.minecraft_version || server[0].version || 'Unknown'
             };
         } catch (statusError) {
             console.warn('Failed to fetch server status:', statusError);

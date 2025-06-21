@@ -7,7 +7,7 @@ import type {
 } from '~/server/shared/types/adapters/adapter';
 
 // 动态导入组件
-const AdapterOnebotCard = defineAsyncComponent(() => import('~/components/Card/Adapter/OnebotCard.vue'));
+const AdapterOnebotCard = defineAsyncComponent(() => import('@/components/Card/Adapter/OnebotCard.vue'));
 
 // 适配器类型映射表
 export const adapterComponentMap: Record<string, Component> = {

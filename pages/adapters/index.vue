@@ -4,7 +4,6 @@ import type { AdapterUnionType } from '~/server/shared/types/adapters/adapter';
 import { getAdapterComponent, isOnebotAdapter } from '~/utils/adapters/componentMap';
 
 import type { AdapterFormData, AdapterPayload } from '../../utils/adapters/forms';
-import { onebotRules } from '../../utils/adapters/rules';
 import Common from '~/components/Card/Adapter/Common.vue';
 import { useRequest } from 'alova/client';
 import { useBreakpoint, useMemo } from 'vooks';
@@ -29,6 +28,25 @@ const refreshTimer = ref<NodeJS.Timeout | null>(null);
 const lastUpdateTime = ref<string>('');
 const editingAdapters = ref<Set<number>>(new Set());
 
+// 计算连接状态统计
+const connectedCount = computed(() => {
+  return adapters.value.filter((adapter) => adapter.connected).length;
+});
+
+// 计算是否可以创建适配器
+const canCreateAdapter = computed(() => {
+  if (!botInstanceData.value.adapterType || !botInstanceData.value.connectionType) {
+    return false;
+  }
+
+  // 反向连接需要 botId，正向连接不需要
+  if (botInstanceData.value.connectionType === 'reverse') {
+    return !!botInstanceData.value.botId;
+  } else {
+    return true; // 正向连接只要选择了连接类型就可以创建
+  }
+});
+
 const defaultOneBotConfig: AdapterFormData['config']['onebot'] = {
   botId: null,
   accessToken: null,
@@ -41,20 +59,16 @@ const formData = ref<AdapterFormData>({
   config: { onebot: { ...defaultOneBotConfig } }
 });
 
-const currentRules = computed(() => {
-  const baseRules = {
-    adapter: { required: true, message: '请选择 Bot 实例类型', trigger: ['blur'] }
-  };
-
-  if (formData.value.adapter_type === 'onebot') {
-    return {
-      ...baseRules,
-      'config.onebot.botId': onebotRules.botId,
-      'config.onebot.responseTimeout': onebotRules.responseTimeout
-    };
-  }
-  return baseRules;
+// Bot 实例数据（用于新的Bot实例选择器）
+const botInstanceData = ref({
+  adapterType: 'onebot',
+  botId: null as number | null,
+  displayName: '',
+  connectionType: 'reverse' as 'reverse' | 'forward'
 });
+
+const botSelectorRef = ref();
+
 function resetFormData() {
   formData.value = {
     adapter_type: '',
@@ -69,6 +83,13 @@ watch(showModal, (val) => {
 
 const handleClose = () => {
   showModal.value = false;
+  // 重置Bot实例数据
+  botInstanceData.value = {
+    adapterType: 'onebot',
+    botId: null,
+    displayName: '',
+    connectionType: 'reverse'
+  };
 };
 
 function getServerList() {
@@ -130,39 +151,58 @@ onUnmounted(() => {
   }
 });
 
-const handleSubmit = (e: Event) => {
-  e.preventDefault();
+// 创建 OneBot 适配器并跳转到编辑页面
+const handleCreateAdapter = async () => {
+  // 验证Bot实例数据
+  if (!botInstanceData.value.adapterType) {
+    message.error('请选择适配器类型');
+    return;
+  }
+
+  // 反向连接需要 botId，正向连接不需要
+  if (botInstanceData.value.connectionType === 'reverse' && !botInstanceData.value.botId) {
+    message.error('反向连接模式下，请输入机器人 ID');
+    return;
+  }
+
   submitting.value = true;
-  formRef.value?.validate().then(() => {
-    const { adapter_type: adapter, config } = formData.value;
-    const payload: AdapterPayload = { adapter_type: adapter };
-    if (adapter === 'onebot') {
-      const data = config.onebot;
-      payload.config = {
-        ...data,
-        botId: data.botId,
-        accessToken: data.accessToken?.trim() || null,
-        responseTimeout: data.responseTimeout || 6000,
-        enabled: data.enabled ?? true
-      };
+
+  // 创建适配器
+  const payload: AdapterPayload = {
+    adapter_type: botInstanceData.value.adapterType,
+    config: {
+      botId: botInstanceData.value.connectionType === 'reverse' ? botInstanceData.value.botId : null,
+      accessToken: null,
+      responseTimeout: 6000,
+      enabled: false, // 默认禁用，让用户在编辑页面完成配置后启用
+      connectionType: botInstanceData.value.connectionType,
+      forwardUrl: null,
+      autoReconnect: true
     }
-    useRequest(adapterApi.addAdapter(payload))
-      .onSuccess(({ data }) => {
-        if (data.success) {
-          message.success('Bot 实例创建成功');
-          handleClose();
-          getServerList();
-        } else {
-          message.error(data.message || '提交 Bot 实例失败');
-        }
-      })
-      .onError(() => {
-        message.error('提交 Bot 实例失败');
-      })
-      .onComplete(() => {
-        submitting.value = false;
-      });
-  });
+  };
+
+  useRequest(adapterApi.addAdapter(payload))
+    .onSuccess(({ data }) => {
+      if (data.success) {
+        message.success('Bot 实例已创建');
+        handleClose();
+        // 刷新适配器列表
+        getServerList();
+      } else {
+        message.error(data.message || '创建 Bot 实例失败');
+      }
+    })
+    .onError(() => {
+      message.error('创建 Bot 实例失败');
+    })
+    .onComplete(() => {
+      submitting.value = false;
+    });
+};
+
+// 处理卡片点击事件 - 跳转到编辑页面
+const handleCardClick = (adapterId: number) => {
+  navigateTo(`/adapters/${adapterId}/edit`);
 };
 
 // 计算每组的适配器数量 - 瀑布流布局
@@ -231,8 +271,6 @@ const onCardEnter = (el: Element, done: () => void) => {
     done();
   }, transitionDuration + delay);
 };
-
-const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
 </script>
 
 <template>
@@ -245,6 +283,12 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
               <n-text strong>
                 <h1>Bot 实例列表</h1>
                 <p>管理多个 Bot 实例，点击进入详细配置。</p>
+                <div class="status-indicators">
+                  <n-space size="small">
+                    <n-tag size="small" :bordered="false" type="info"> 总计: {{ adapters.length }} </n-tag>
+                    <n-tag size="small" :bordered="false" type="success"> 已连接: {{ connectedCount }} </n-tag>
+                  </n-space>
+                </div>
                 <p v-if="lastUpdateTime" class="last-update">最后更新: {{ lastUpdateTime }}</p>
               </n-text>
             </div>
@@ -296,68 +340,15 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
 
         <n-modal
           v-model:show="showModal"
-          title="新建 Bot 实例"
+          title="创建 Bot 实例"
           preset="dialog"
           :show-icon="false"
           :style="{
-            width: isMobile ? '90vw' : '600px',
-            maxWidth: isMobile ? '90vw' : '600px'
+            width: isMobile ? '90vw' : '480px',
+            maxWidth: isMobile ? '90vw' : '480px'
           }"
         >
-          <n-divider />
-          <n-form
-            ref="formRef"
-            :model="formData"
-            :rules="currentRules"
-            :label-placement="isMobile ? 'top' : 'left'"
-            :label-width="isMobile ? undefined : '90px'"
-          >
-            <n-form-item label="选择适配器" :show-feedback="false">
-              <n-select
-                v-model:value="formData.adapter_type"
-                :options="adapterOptions"
-                placeholder="请选择适配器类型"
-                style="width: 100%"
-              />
-            </n-form-item>
-
-            <n-divider />
-            <!-- OneBot 适配器表单 -->
-            <template v-if="formData.adapter_type === 'onebot'">
-              <div class="adapter-modal">
-                <n-form-item label="Bot ID" path="config.onebot.botId">
-                  <n-input-number
-                    v-model:value="formData.config.onebot.botId"
-                    placeholder="请输入Bot ID"
-                    style="width: 100%"
-                  />
-                </n-form-item>
-                <n-form-item label="访问令牌" path="config.onebot.accessToken">
-                  <n-input
-                    v-model:value="formData.config.onebot.accessToken"
-                    placeholder="请输入访问令牌（可选）"
-                    type="password"
-                    show-password-on="click"
-                    style="width: 100%"
-                  />
-                </n-form-item>
-                <n-form-item label="响应超时" path="config.onebot.responseTimeout">
-                  <n-input-number
-                    v-model:value="formData.config.onebot.responseTimeout"
-                    placeholder="超时时间（毫秒）"
-                    :min="1000"
-                    :step="1000"
-                    style="width: 100%"
-                  >
-                    <template #suffix>毫秒</template>
-                  </n-input-number>
-                </n-form-item>
-                <n-form-item label="是否启用" path="config.onebot.enabled">
-                  <n-switch v-model:value="formData.config.onebot.enabled" />
-                </n-form-item>
-              </div>
-            </template>
-          </n-form>
+          <BotInstanceSelector ref="botSelectorRef" v-model="botInstanceData" />
 
           <template #action>
             <n-space
@@ -369,19 +360,19 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
               <n-button
                 type="primary"
                 :loading="submitting"
-                :disabled="submitting || !formData.adapter_type"
+                :disabled="submitting || !canCreateAdapter"
                 :size="isMobile ? 'medium' : 'large'"
                 :block="isMobile"
-                @click="handleSubmit"
+                @click="handleCreateAdapter"
               >
-                {{ submitting ? '创建中...' : '创建 Bot 实例' }}
+                {{ submitting ? '创建中...' : '创建实例' }}
               </n-button>
             </n-space>
           </template>
         </n-modal>
 
         <!-- 分组显示适配器 -->
-        <n-grid :cols="isMobile ? 1 : '600:2 1100:3 1200:4'" x-gap="16" y-gap="16" :item-responsive="true">
+        <n-grid :cols="isMobile ? 1 : '600:2 1100:3 1200:4'" x-gap="12" y-gap="12" :item-responsive="true">
           <n-gi v-for="group in groupedAdapters" :key="group.id">
             <n-space vertical size="medium">
               <div v-for="(adapter, index) in group.adapters" :key="adapter.id" style="margin-bottom: 16px">
@@ -393,6 +384,7 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
                     @update="getServerList"
                     @delete="getServerList"
                     @editing-change="handleEditingChange"
+                    @click="handleCardClick(adapter.id)"
                   />
                 </Transition>
               </div>
@@ -472,6 +464,10 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
       color: #999;
       margin-top: 4px;
     }
+
+    .status-indicators {
+      margin: 8px 0;
+    }
   }
 
   .adapter-modal {
@@ -486,35 +482,20 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
 
 /* 移动端优化 */
 @media (max-width: 768px) {
-  .server-list {
-    .head {
-      margin-bottom: 16px;
+  .server-list .head {
+    margin-bottom: 16px;
 
-      .head-text {
-        h1 {
-          font-size: 20px;
-        }
-
-        p {
-          font-size: 13px;
-        }
-
-        .last-update {
-          font-size: 11px;
-        }
+    .head-text {
+      h1 {
+        font-size: 20px;
       }
-    }
-  }
 
-  /* 模态框内容优化 */
-  :deep(.n-modal) {
-    .n-card {
-      margin: 16px;
+      p {
+        font-size: 13px;
+      }
 
-      .n-form {
-        .n-form-item {
-          margin-bottom: 16px;
-        }
+      .last-update {
+        font-size: 11px;
       }
     }
   }
@@ -522,28 +503,13 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
 
 /* 超小屏幕优化 */
 @media (max-width: 480px) {
-  .server-list {
-    .head {
-      .head-text {
-        .action-section {
-          :deep(.n-space-item) {
-            .n-button {
-              min-height: 36px;
-              font-size: 13px;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  /* 网格间距优化 */
-  :deep(.n-grid) {
-    --n-gap: 12px;
+  .server-list .head .head-text .action-section :deep(.n-button) {
+    min-height: 36px;
+    font-size: 13px;
   }
 }
 
-/* 卡片出现动画 */
+/* 动画效果 */
 .card-appear-enter-active {
   transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
 }
@@ -558,7 +524,6 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
   transform: scale(1) translateY(0);
 }
 
-/* 内容整体过渡动画 */
 .content-transition-enter-active {
   transition: all 0.4s ease-out;
 }
@@ -571,5 +536,12 @@ const adapterOptions = [{ label: 'OneBotV11', value: 'onebot' }];
 .content-transition-enter-to {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* 适配器创建表单样式 */
+.adapter-create-form {
+  .n-form-item {
+    margin-bottom: 16px;
+  }
 }
 </style>

@@ -46,7 +46,7 @@ export default defineWebSocketHandler({
         peer.send(
             JSON.stringify({
                 type: 'welcome',
-                message: '连接成功，欢迎使用 FGATE 🎉',
+                message: '连接成功，欢迎使用 FGATE',
                 api_version: '0.0.1'
             })
         );
@@ -60,7 +60,9 @@ export default defineWebSocketHandler({
     },
 
     message(peer, message) {
-        const hasClient = wsManager.hasClient(peer as unknown as import('crossws').Peer<import('crossws').AdapterInternal>);
+        const hasClient = wsManager.hasClient(
+            peer as unknown as import('crossws').Peer<import('crossws').AdapterInternal>
+        );
 
         if (!hasClient) {
             console.log('WebSocket 连接已断开，无法处理消息');

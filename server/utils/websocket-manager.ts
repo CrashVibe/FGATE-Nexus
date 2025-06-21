@@ -2,8 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { MinecraftClientManager } from './client/minecraft-client-manager';
 import type { AdapterInternal, Peer } from 'crossws';
 import type { ClientInfo, JsonRpcRequest, JsonRpcResponse, PendingRequest } from './client/type';
-import type { ServerStatus } from '~/server/shared/types/server/status';
-import type { GetClientInfoResult } from '~/server/shared/types/server/client-info';
+import type { GetClientInfoResult } from '../shared/types/server/client-info';
 
 // 在类外部新增 WeakMap 用于反向绑定
 const peerClientMap: WeakMap<ClientInfo, Peer<AdapterInternal>> = new WeakMap();
@@ -67,7 +66,7 @@ export class WebSocketManager {
         // 反向绑定：保证 client 能唯一找到 peer
         peerClientMap.set(client, peer);
 
-        console.log(`📱 新客户端已连接: ${clientId} (版本: ${clientVersion})`);
+        console.log(`📱 新客户端已连接: ${clientId} - 版本: ${clientVersion}`);
         this.requestClientInfo(peer);
     }
 
@@ -94,7 +93,7 @@ export class WebSocketManager {
 
             this.sendError(peer, -32600, '请求无效', data.id ?? null);
         } catch (error) {
-            console.error(`❌ 解析客户端 ${peer.id} 消息出错:`, error);
+            console.error(`[FAILED] 解析消息失败: 客户端 ${peer.id} -`, error);
             this.sendError(peer, -32700, 'Parse error', null);
         }
     }
@@ -103,7 +102,7 @@ export class WebSocketManager {
         const client = this.clients.get(peer);
         if (!client) return;
 
-        console.log(`📨 收到来自 ${peer.id} 的请求: ${request.method}`);
+        console.log(`📨 收到请求: ${peer.id} - ${request.method}`);
 
         switch (request.method) {
             case 'player.join':
@@ -129,6 +128,20 @@ export class WebSocketManager {
                 ) {
                     const params = request.params as { playerName: string; playerUUID: string };
                     await this.handlePlayerBind(peer, params, request.id ?? null);
+                } else {
+                    this.sendError(peer, -32602, '参数无效', request.id ?? null);
+                }
+                break;
+
+            case 'mc.chat':
+                if (
+                    typeof request.params === 'object' &&
+                    request.params !== null &&
+                    typeof (request.params as { player?: unknown }).player === 'string' &&
+                    typeof (request.params as { message?: unknown }).message === 'string'
+                ) {
+                    const params = request.params as { player: string; message: string; timestamp?: number };
+                    await this.handleMinecraftChat(peer, params, request.id ?? null);
                 } else {
                     this.sendError(peer, -32602, '参数无效', request.id ?? null);
                 }
@@ -170,36 +183,39 @@ export class WebSocketManager {
     ) {
         const clientId = this.getClientIdByPeer(peer);
         if (!clientId) {
-            console.warn(`⚠️  无法处理玩家加入数据: 来自 ${peer.id}`);
+            console.warn(`[WARNING] 无法处理玩家加入请求: 来自 ${peer.id}`);
             this.sendError(peer, -32000, '无法找到客户端信息', requestId);
             return;
         }
 
         if (!params?.player || !params?.uuid) {
-            console.warn(`⚠️  无法处理玩家加入数据: 来自 ${clientId}`);
+            console.warn(`[WARNING] 玩家加入请求参数无效: 来自 ${clientId}`);
             this.sendError(peer, -32602, '玩家参数无效', requestId);
             return;
         }
 
-        console.log(`🎮 玩家加入: ${clientId}: ${params.player} (${params.uuid}) IP: ${params.ip}`);
+        console.log(`🎮 收到玩家加入请求: ${clientId} - ${params.player} (${params.uuid}) IP: ${params.ip}`);
 
         try {
+            // 统一导入所需模块
             const { db } = await import('../database/client');
             const { servers, players } = await import('../database/schema');
             const { eq } = await import('drizzle-orm');
             const { BindingConfigManager } = await import('../utils/config/bindingConfigManager');
 
-            // 通过 token 查找服务器 id
+            // 通过 token 查找服务器 ID
             const client = this.clients.get(peer);
             if (!client) {
                 this.sendError(peer, -32000, '客户端信息丢失', requestId);
                 return;
             }
+
             const serverRow = await db.select().from(servers).where(eq(servers.token, client.token)).limit(1);
             if (!serverRow.length) {
                 this.sendError(peer, -32000, '服务器配置未找到', requestId);
                 return;
             }
+
             const serverId = serverRow[0].id;
 
             // 1. 写入或更新玩家信息到数据库
@@ -226,7 +242,7 @@ export class WebSocketManager {
                     })
                     .where(eq(players.uuid, params.uuid));
 
-                console.log(`📝 已更新玩家信息: ${params.player} (${params.uuid}) IP: ${params.ip}`);
+                console.log(`[INFO] 玩家信息已更新: ${params.player} (${params.uuid}) IP: ${params.ip}`);
             } else {
                 // 创建新玩家记录
                 await db.insert(players).values({
@@ -237,7 +253,7 @@ export class WebSocketManager {
                     socialAccountId: null
                 });
 
-                console.log(`✨ 已创建新玩家记录: ${params.player} (${params.uuid}) IP: ${params.ip}`);
+                console.log(`✨ 新玩家记录已创建: ${params.player} (${params.uuid}) IP: ${params.ip}`);
             }
 
             // 2. 获取绑定配置并进行强制绑定校验
@@ -270,7 +286,7 @@ export class WebSocketManager {
                                 .replace('#code', bindingResult.code)
                                 .replace('#time', `${config.codeExpire}分钟`);
 
-                            console.log(`🔐 为玩家 ${params.player} 生成绑定验证码: ${bindingResult.code}`);
+                            console.log(`🔐 已生成绑定验证码: ${params.player} - ${bindingResult.code}`);
                         } else {
                             kickMessage = kickMessage
                                 .replace('#name', params.player)
@@ -278,20 +294,20 @@ export class WebSocketManager {
                                 .replace('#code', '验证码')
                                 .replace('#time', `${config.codeExpire}分钟`);
 
-                            console.log(`❌ 为玩家 ${params.player} 生成绑定验证码失败: ${bindingResult.message}`);
+                            console.log(`[FAILED] 验证码生成失败: ${params.player} - ${bindingResult.message}`);
                         }
 
                         this.sendResponse(peer, requestId, { action: 'kick', reason: kickMessage });
-                        console.log(`⛔ 玩家 ${params.player} 未绑定社交账号，已生成验证码并回应踢出`);
+                        console.log(`⛔ 玩家未绑定，已踢出: ${params.player}`);
                     } catch (error) {
-                        console.error('生成绑定验证码失败:', error);
+                        console.error(`[FAILED] 生成绑定验证码失败:`, error);
                         const kickMessage = config.kickMsg
                             .replace('#name', params.player)
                             .replace('#cmd_prefix', `${config.prefix}验证码`)
                             .replace('#code', '验证码')
                             .replace('#time', `${config.codeExpire}分钟`);
                         this.sendResponse(peer, requestId, { action: 'kick', reason: kickMessage });
-                        console.log(`⛔ 玩家 ${params.player} 未绑定社交账号，验证码生成失败，已回应踢出`);
+                        console.log(`⛔ 玩家未绑定，验证码生成失败，已踢出: ${params.player}`);
                     }
                     return;
                 }
@@ -300,7 +316,7 @@ export class WebSocketManager {
             // 允许玩家加入
             this.sendResponse(peer, requestId, { action: 'allow' });
         } catch (err) {
-            console.error('处理玩家加入事件时出错:', err);
+            console.error(`[FAILED] 处理玩家加入请求失败:`, err);
             this.sendError(peer, -32000, '处理玩家加入事件时出错', requestId);
         }
     }
@@ -312,25 +328,27 @@ export class WebSocketManager {
     ) {
         const clientId = this.getClientIdByPeer(peer);
         if (!clientId) {
-            console.warn(`⚠️  无法处理玩家绑定请求: 来自 ${peer.id}`);
+            console.warn(`[WARNING] 无法处理玩家绑定请求: 来自 ${peer.id}`);
             this.sendError(peer, -32000, '无法找到客户端信息', requestId);
             return;
         }
 
         if (!params?.playerName || !params?.playerUUID) {
-            console.warn(`⚠️  无法处理玩家绑定请求: 来自 ${clientId}, 参数无效`);
+            console.warn(`[WARNING] 玩家绑定请求参数无效: 来自 ${clientId}`);
             this.sendError(peer, -32602, '玩家参数无效', requestId);
             return;
         }
 
-        console.log(`🔗 收到玩家绑定请求: ${clientId}: ${params.playerName} (${params.playerUUID})`);
+        console.log(`[BINDING] 收到玩家绑定请求: ${clientId} - ${params.playerName} (${params.playerUUID})`);
 
         try {
+            // 统一导入所需模块
             const { db } = await import('../database/client');
-            const { servers } = await import('../database/schema');
+            const { servers, players } = await import('../database/schema');
             const { eq } = await import('drizzle-orm');
+            const { bindingManager } = await import('~/utils/bindingManager');
 
-            // 通过 token 查找服务器 id
+            // 通过 token 查找服务器 ID
             const client = this.clients.get(peer);
             if (!client) {
                 this.sendError(peer, -32000, '客户端信息丢失', requestId);
@@ -345,8 +363,19 @@ export class WebSocketManager {
 
             const serverId = serverRow[0].id;
 
-            // 动态导入绑定管理器
-            const { bindingManager } = await import('~/utils/bindingManager');
+            // 检查玩家是否已经绑定
+            const existingPlayer = await db.select().from(players).where(eq(players.uuid, params.playerUUID)).limit(1);
+
+            if (existingPlayer.length > 0 && existingPlayer[0].socialAccountId) {
+                // 玩家已经绑定，返回成功状态
+                this.sendResponse(peer, requestId, {
+                    authCode: null,
+                    message: '玩家已绑定',
+                    alreadyBound: true
+                });
+                console.log(`[SUCCESS] 玩家已绑定: ${params.playerName} (${params.playerUUID})`);
+                return;
+            }
 
             // 为玩家生成验证码
             const tempSocialId = `minecraft_${params.playerUUID}`;
@@ -354,14 +383,17 @@ export class WebSocketManager {
 
             if (bindingResult.success && bindingResult.code) {
                 // 返回验证码给客户端
-                this.sendResponse(peer, requestId, { authCode: bindingResult.code });
-                console.log(`🔐 为玩家 ${params.playerName} 生成绑定验证码: ${bindingResult.code}`);
+                this.sendResponse(peer, requestId, {
+                    authCode: bindingResult.code,
+                    alreadyBound: false
+                });
+                console.log(`🔐 已生成绑定验证码: ${params.playerName} - ${bindingResult.code}`);
             } else {
                 this.sendError(peer, -32000, bindingResult.message || '生成验证码失败', requestId);
-                console.log(`❌ 为玩家 ${params.playerName} 生成绑定验证码失败: ${bindingResult.message}`);
+                console.log(`[FAILED] 验证码生成失败: ${params.playerName} - ${bindingResult.message}`);
             }
         } catch (err) {
-            console.error('处理玩家绑定请求时出错:', err);
+            console.error(`[FAILED] 处理玩家绑定请求失败:`, err);
             this.sendError(peer, -32000, '处理玩家绑定请求时出错', requestId);
         }
     }
@@ -376,9 +408,205 @@ export class WebSocketManager {
                     reason = `未知原因 (代码: ${code})`;
                 }
             }
-            console.log(`📱 客户端断开连接: ${client.id}, 代码: ${code}, 原因: ${reason}`);
+            console.log(`📱 客户端已断开连接: ${client.id} - 代码: ${code}, 原因: ${reason}`);
             this.clients.delete(peer);
             this.minecraftManager.removeClient(peer);
+        }
+    }
+
+    // 处理 MC 聊天消息
+    private async handleMinecraftChat(
+        peer: Peer<AdapterInternal>,
+        params: { player: string; message: string; timestamp?: number },
+        requestId: string | null
+    ): Promise<void> {
+        try {
+            const client = this.clients.get(peer);
+            if (!client) {
+                this.sendError(peer, -32000, '客户端信息丢失', requestId);
+                return;
+            }
+
+            // 通过 token 查找服务器 ID
+            const { db } = await import('../database/client');
+            const { servers } = await import('../database/schema');
+            const { eq } = await import('drizzle-orm');
+
+            const serverRow = await db.select().from(servers).where(eq(servers.token, client.token)).limit(1);
+            if (!serverRow.length) {
+                this.sendError(peer, -32000, '服务器配置未找到', requestId);
+                return;
+            }
+
+            const serverId = serverRow[0].id;
+
+            // 使用统一的消息同步处理器，确保消息只入队一次
+            const { messageSyncHandler } = await import('../handlers/message/messageSyncHandler');
+
+            const result = await messageSyncHandler.handleMessage({
+                serverId,
+                content: params.message,
+                sender: params.player,
+                timestamp: new Date(params.timestamp || Date.now()),
+                source: 'minecraft'
+            });
+
+            console.log(`💬 MC聊天消息已处理: ${params.player}: ${params.message} - ${result.message}`);
+        } catch (error) {
+            console.error(`[FAILED] 处理MC聊天消息失败:`, error);
+            this.sendError(peer, -32000, '处理聊天消息时出错', requestId);
+        }
+    }
+
+    // 广播消息到指定服务器的所有MC客户端
+    public async broadcastToServer(serverId: string, message: string): Promise<void> {
+        try {
+            // 通过服务器ID查找对应的客户端连接
+            const { db } = await import('../database/client');
+            const { servers } = await import('../database/schema');
+            const { eq } = await import('drizzle-orm');
+
+            const serverResult = await db
+                .select()
+                .from(servers)
+                .where(eq(servers.id, parseInt(serverId)))
+                .limit(1);
+            if (!serverResult.length) {
+                console.error(`[FAILED] 服务器不存在: ${serverId}`);
+                return;
+            }
+
+            const serverToken = serverResult[0].token;
+
+            // 查找使用该token的客户端连接
+            const targetClient = Array.from(this.clients.values()).find((client) => client.token === serverToken);
+            if (!targetClient) {
+                console.warn(`[WARNING] 服务器未连接: ${serverId}`);
+                return;
+            }
+
+            const targetPeer = this.getBoundPeer(targetClient);
+
+            // 发送广播消息通知
+            const notification: JsonRpcRequest = {
+                jsonrpc: '2.0',
+                method: 'broadcast.message',
+                params: {
+                    message
+                },
+                id: null
+            };
+
+            targetPeer.send(JSON.stringify(notification));
+            console.log(`� 已向服务器 ${serverId} 广播消息: ${message}`);
+        } catch (error) {
+            console.error(`[FAILED] 广播消息到服务器失败: ${serverId}`, error);
+        }
+    }
+
+    public getPeerByToken(token: string): boolean {
+        return Array.from(this.clients.values()).some((client) => client.token === token);
+    }
+
+    public kickPlayerDirect(
+        peer: Peer<AdapterInternal>,
+        playerIdentifier: string,
+        reason: string = 'You have been kicked'
+    ) {
+        const client = this.clients.get(peer);
+        if (!client) {
+            console.warn(`[WARNING] 无法踢出玩家: 客户端 ${peer.id} 未找到`);
+            return;
+        }
+
+        const notification: JsonRpcRequest = {
+            jsonrpc: '2.0',
+            method: 'kick.player',
+            params: {
+                player: playerIdentifier,
+                reason
+            },
+            id: null
+        };
+
+        try {
+            peer.send(JSON.stringify(notification));
+            console.log(`👢 已向 ${peer.id} 发送踢人指令: ${playerIdentifier}`);
+        } catch (error) {
+            console.error(`[FAILED] 向 ${peer.id} 发送踢人指令失败:`, error);
+        }
+    }
+
+    // 通过服务器ID踢出玩家
+    public async kickPlayerByServerId(
+        serverId: string,
+        playerName: string,
+        reason: string = 'You have been kicked'
+    ): Promise<{ success: boolean; error?: string }> {
+        try {
+            // 通过服务器ID查找对应的客户端连接
+            const { db } = await import('../database/client');
+            const { servers } = await import('../database/schema');
+            const { eq } = await import('drizzle-orm');
+
+            const serverResult = await db
+                .select()
+                .from(servers)
+                .where(eq(servers.id, parseInt(serverId)))
+                .limit(1);
+            if (!serverResult.length) {
+                return { success: false, error: '服务器不存在' };
+            }
+
+            const serverToken = serverResult[0].token;
+
+            // 查找使用该token的客户端连接
+            const targetClient = Array.from(this.clients.values()).find((client) => client.token === serverToken);
+            if (!targetClient) {
+                return { success: false, error: '服务器未连接' };
+            }
+
+            const targetPeer = this.getBoundPeer(targetClient);
+            this.kickPlayerDirect(targetPeer, playerName, reason);
+
+            return { success: true };
+        } catch (error) {
+            console.error(`[FAILED] 通过服务器ID踢出玩家失败:`, error);
+            return { success: false, error: error instanceof Error ? error.message : '未知错误' };
+        }
+    }
+
+    // JSON-RPC 辅助方法
+    private sendError(peer: Peer<AdapterInternal>, code: number, message: string, id: string | null): void {
+        const error = {
+            jsonrpc: '2.0',
+            error: {
+                code,
+                message
+            },
+            id
+        };
+
+        try {
+            peer.send(JSON.stringify(error));
+            console.log(`[ERROR] 错误响应已发送: ${peer.id} - ${code}: ${message}`);
+        } catch (sendError) {
+            console.error(`[FAILED] 发送错误响应失败: ${peer.id}`, sendError);
+        }
+    }
+
+    private sendResponse(peer: Peer<AdapterInternal>, id: string | null, result: unknown): void {
+        const response: JsonRpcResponse = {
+            jsonrpc: '2.0',
+            result,
+            id
+        };
+
+        try {
+            peer.send(JSON.stringify(response));
+            console.log(`[SUCCESS] 响应已发送: ${peer.id} - ID: ${id}`);
+        } catch (error) {
+            console.error(`[FAILED] 发送响应失败: ${peer.id}`, error);
         }
     }
 
@@ -408,64 +636,18 @@ export class WebSocketManager {
 
             try {
                 peer.send(JSON.stringify(request));
-                console.log(`📤 已发送请求到 ${peer.id}: ${method} (ID: ${id})`);
+                console.log(`[SEND] 请求已发送: ${peer.id} - ${method} (ID: ${id})`);
             } catch (error) {
-                this.pendingRequests.delete(id);
                 clearTimeout(timeout);
+                this.pendingRequests.delete(id);
                 reject(error);
             }
         });
     }
 
-    // 发送JSON-RPC响应
-    private sendResponse<R = unknown, E = unknown>(
-        peer: Peer<AdapterInternal>,
-        id: string | null,
-        result: R,
-        error?: E
-    ) {
-        const client = this.clients.get(peer);
-        if (!client) {
-            console.warn(`⚠️  无法发送响应到客户端 ${peer.id}: 客户端未连接`);
-            return;
-        }
-
-        const response: JsonRpcResponse<R, E> = {
-            jsonrpc: '2.0',
-            id,
-            result
-        };
-
-        if (error) {
-            response.error =
-                error && typeof error === 'object' && 'code' in error && 'message' in error
-                    ? (error as { code: number; message: string; data?: E })
-                    : { code: -32000, message: 'Unknown error', data: error as E };
-        }
-
-        try {
-            peer.send(JSON.stringify(response));
-        } catch (err) {
-            console.error(`❌ 无法发送响应到客户端 ${client.id}:`, err);
-        }
-    }
-
-    // 发送错误响应
-    private sendError<E = unknown>(
-        peer: Peer<AdapterInternal>,
-        code: number,
-        message: string,
-        id: string | null,
-        data?: E
-    ) {
-        this.sendResponse(peer, id, undefined, { code, message, data });
-    }
-
-    // 请求客户端信息
-    private async requestClientInfo(peer: Peer<AdapterInternal>) {
+    private async requestClientInfo(peer: Peer<AdapterInternal>): Promise<ClientInfo | undefined> {
         try {
             const result = await this.sendRequest<GetClientInfoResult>(peer, 'get.client.info');
-            // 类型检测
             if (
                 !result.data ||
                 typeof result.data.minecraft_version !== 'string' ||
@@ -474,7 +656,7 @@ export class WebSocketManager {
                 typeof result.data.supports_rcon !== 'boolean'
             ) {
                 console.warn(result.data);
-                console.warn(`⚠️ 警告: 客户端 ${peer.id} 未提供完整的客户端信息`);
+                console.warn(`[WARNING] 客户端信息不完整: ${peer.id}`);
                 return;
             }
             // 写入数据库
@@ -487,228 +669,48 @@ export class WebSocketManager {
                     supports_rcon: result.data.supports_rcon
                 };
                 this.minecraftManager.updateClientInfo(peer, client);
+                console.log(`[INFO] 客户端信息已接收: ${peer.id} -`, client.serverInfo);
+                return client;
             } else {
-                console.warn(`⚠️  无法更新客户端信息: 客户端 ${peer.id} 未找到`);
+                console.warn(`[WARNING] 无法更新客户端信息: ${peer.id} 未找到`);
                 return;
             }
-            console.log(`📊 已收到来自 ${peer.id} 的客户端信息:`, client.serverInfo);
         } catch (error) {
-            console.error(`❌ 获取客户端 ${peer.id} 信息失败:`, error);
+            console.error(`[FAILED] 获取客户端信息失败: ${peer.id} -`, error);
         }
     }
-
-    public async kickPlayerByServerId(
-        serverId: number,
-        playerIdentifier: string,
-        reason: string = 'You have been kicked'
-    ): Promise<{ success: boolean; error?: string }> {
+    public async getServerStatus(serverId: number) {
         try {
-            const peer = await this.getPeerByServerId(serverId);
-            if (!peer) {
-                return { success: false, error: '服务器未连接' };
-            }
-
-            const client = this.clients.get(peer);
-            if (!client) {
-                return { success: false, error: '服务器客户端未找到' };
-            }
-
-            const notification: JsonRpcRequest = {
-                jsonrpc: '2.0',
-                method: 'kick.player',
-                id: null,
-                params: {
-                    player: playerIdentifier,
-                    reason
-                }
-            };
-
-            peer.send(JSON.stringify(notification));
-            console.log(`👢 已向服务器 ${serverId} 发送踢人指令: ${playerIdentifier}`);
-            return { success: true };
-        } catch (error) {
-            console.error(`❌ 踢出服务器 ${serverId} 玩家失败:`, error);
-            return { success: false, error: String(error) };
-        }
-    }
-
-    public async disconnectServer(serverId: number): Promise<{ success: boolean; error?: string }> {
-        try {
-            const peer = await this.getPeerByServerId(serverId);
-            if (!peer) {
-                return { success: false, error: '服务器未连接' };
-            }
-
-            const client = this.clients.get(peer);
-            if (client) {
-                console.log(`🔌 正在断开服务器 ${serverId} (${client.id})`);
-                this.clients.delete(peer);
-                this.minecraftManager.removeClient(peer);
-                peer.close();
-                return { success: true };
-            }
-
-            return { success: false, error: '服务器客户端未找到' };
-        } catch (error) {
-            console.error(`❌ 断开服务器 ${serverId} 失败:`, error);
-            return { success: false, error: String(error) };
-        }
-    }
-
-    // 统一生成未知服务器状态的默认对象
-    private static getUnknownServerStatus(): ServerStatus {
-        return {
-            isOnline: false,
-            playerCount: 0,
-            lastSeen: null,
-            supportsRcon: false,
-            supportsPapi: false,
-            software: 'Unknown',
-            version: 'Unknown'
-        };
-    }
-
-    public async getServerStatus(serverId: number): Promise<ServerStatus> {
-        try {
-            const peer = await this.getPeerByServerId(serverId);
-            if (!peer) {
-                return WebSocketManager.getUnknownServerStatus();
-            }
-
-            const client = this.clients.get(peer);
-            if (!client) {
-                return WebSocketManager.getUnknownServerStatus();
-            }
-
-            return {
-                isOnline: client.isAlive,
-                playerCount: client.playerCount || 0,
-                lastSeen: new Date(client.lastPing),
-                supportsRcon: client.serverInfo?.supports_rcon || false,
-                supportsPapi: client.serverInfo?.supports_papi || false,
-                software: client.serverInfo?.server_type || 'Unknown',
-                version: client.serverInfo?.minecraft_version || 'Unknown'
-            };
-        } catch (error) {
-            console.error(`❌ 获取服务器 ${serverId} 状态失败:`, error);
-            return WebSocketManager.getUnknownServerStatus();
-        }
-    }
-
-    private async getPeerByServerId(serverId: number): Promise<Peer<AdapterInternal> | null> {
-        try {
-            // 从数据库获取服务器token
+            // 通过服务器ID查找对应的token
             const { db } = await import('../database/client');
             const { servers } = await import('../database/schema');
             const { eq } = await import('drizzle-orm');
 
-            const server = await db.select().from(servers).where(eq(servers.id, serverId)).limit(1);
+            const serverResult = await db.select().from(servers).where(eq(servers.id, serverId)).limit(1);
 
-            if (server.length === 0) {
-                console.warn(`⚠️  数据库未找到服务器 ${serverId}`);
+            if (!serverResult.length) {
+                console.warn(`[WARNING] 服务器不存在: ${serverId}`);
                 return null;
             }
 
-            const serverToken = server[0].token;
+            const serverToken = serverResult[0].token;
 
-            // 在连接的客户端中查找匹配的token
-            for (const [peer, client] of this.clients.entries()) {
-                if (client.token === serverToken && client.isAlive) {
-                    return peer;
-                }
+            // 通过token查找客户端
+            const client = Array.from(this.clients.values()).find((c) => c.token === serverToken);
+            if (!client) {
+                console.warn(`[WARNING] 未找到服务器ID为 ${serverId} 的客户端连接`);
+                return null;
             }
 
-            return null;
+            const clientInfo = await this.requestClientInfo(client.peer);
+            if (!clientInfo) {
+                console.warn(`[WARNING] 获取服务器状态失败: ${serverId}`);
+                return null;
+            }
+            return clientInfo;
         } catch (error) {
-            console.error(`❌ 查找服务器 ${serverId} 的 peer 失败:`, error);
+            console.error(`[FAILED] 获取服务器状态失败: ${serverId}`, error);
             return null;
-        }
-    }
-
-    public getConnectedClients(): ClientInfo[] {
-        return Array.from(this.clients.values());
-    }
-
-    // getClient：通过 peer 获取强绑定的 client，保证一定存在
-    public getClient(peer: Peer<AdapterInternal>): ClientInfo {
-        return this.getBoundClient(peer);
-    }
-
-    // getPeerByClient：通过 client 获取强绑定的 peer，保证一定存在
-    public getPeerByClient(client: ClientInfo): Peer<AdapterInternal> {
-        return this.getBoundPeer(client);
-    }
-
-    public broadcast<P = unknown>(method: string, params?: P) {
-        const notification: JsonRpcRequest<P> = {
-            jsonrpc: '2.0',
-            method,
-            id: null,
-            params
-        };
-
-        const message = JSON.stringify(notification);
-
-        this.clients.forEach((client, peer) => {
-            try {
-                client.peer.send(message);
-            } catch (error) {
-                console.error(`❌ 广播到客户端 ${peer} 失败:`, error);
-            }
-        });
-    }
-
-    public destroy() {
-        if (this.heartbeatInterval) {
-            clearInterval(this.heartbeatInterval);
-            this.heartbeatInterval = null;
-        }
-
-        this.pendingRequests.forEach((request) => {
-            clearTimeout(request.timeout);
-            request.reject(new Error('WebSocketManager destroyed'));
-        });
-        this.pendingRequests.clear();
-
-        this.clients.forEach((client) => {
-            try {
-                client.peer.close();
-            } catch (error) {
-                console.error('❌ 关闭客户端连接出错:', error);
-            }
-        });
-        this.clients.clear();
-    }
-    public getPeerByToken(token: string): boolean {
-        return Array.from(this.clients.values()).some((client) => client.token === token);
-    }
-
-    public kickPlayerDirect(
-        peer: Peer<AdapterInternal>,
-        playerIdentifier: string,
-        reason: string = 'You have been kicked'
-    ) {
-        const client = this.clients.get(peer);
-        if (!client) {
-            console.warn(`⚠️  无法踢出玩家: 未找到客户端 ${peer.id}`);
-            return;
-        }
-
-        const notification: JsonRpcRequest = {
-            jsonrpc: '2.0',
-            method: 'kick.player',
-            params: {
-                player: playerIdentifier,
-                reason
-            },
-            id: null
-        };
-
-        try {
-            peer.send(JSON.stringify(notification));
-            console.log(`👢 已向 ${peer.id} 发送踢人指令: ${playerIdentifier}`);
-        } catch (error) {
-            console.error(`❌ 向 ${peer.id} 发送踢人指令失败:`, error);
         }
     }
 }

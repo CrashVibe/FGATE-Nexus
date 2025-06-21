@@ -7,8 +7,7 @@ export default defineNuxtConfig({
     devtools: { enabled: true },
     ssr: false,
 
-    // 全局样式配置
-    css: ['~/assets/css/index.less', '~/assets/css/server-pages.less'],
+    css: [],
 
     runtimeConfig: {
         public: {
@@ -68,11 +67,6 @@ export default defineNuxtConfig({
             })
         ]
     },
-    watchers: {
-        chokidar: {
-            usePolling: true
-        }
-    },
     app: {
         head: {
             link: [
@@ -101,9 +95,6 @@ export default defineNuxtConfig({
         minify: true,
         compressPublicAssets: true,
         inlineDynamicImports: true,
-        watchOptions: {
-            usePolling: true
-        },
         node: true,
         externals: {
             inline: ['vue', '@vue/shared', '@vue/runtime-dom']

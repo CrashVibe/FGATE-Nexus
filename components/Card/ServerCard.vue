@@ -209,67 +209,25 @@ const getSoftwareIcon = (software: string | null) => {
 </script>
 
 <style scoped lang="less">
-.token-input {
-  min-width: 120px;
-}
-
 .server-card {
   cursor: pointer;
   border-radius: 8px;
-  transition:
-    box-shadow 0.2s,
-    border-color 0.2s,
-    background 0.2s;
+  transition: all 0.3s ease;
 
   &.offline {
     filter: grayscale(0.3);
   }
 
   &:hover {
+    transform: translateY(-4px);
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.13);
-    border-color: #409eff;
-    background: rgba(64, 158, 255, 0.04);
   }
-}
-
-.server-card:hover {
-  transform: translateY(-4px);
 }
 
 .card-content {
   display: flex;
   flex-direction: column;
   gap: 12px;
-
-  &.mobile-layout {
-    gap: 8px;
-
-    .header {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 6px;
-
-      .name-with-status {
-        justify-content: space-between;
-      }
-
-      .version-tag {
-        align-self: flex-end;
-        margin-top: -2px;
-      }
-    }
-
-    .software-info {
-      margin-bottom: 12px;
-      gap: 6px;
-    }
-
-    .token-section {
-      .token-label {
-        margin-bottom: 6px;
-      }
-    }
-  }
 }
 
 .header {
@@ -281,11 +239,10 @@ const getSoftwareIcon = (software: string | null) => {
 
 .name-with-status {
   display: flex;
-  flex-direction: row;
+  align-items: center;
   gap: 6px;
   flex: 1;
   min-width: 0;
-  align-items: center;
 }
 
 .server-name {
@@ -295,51 +252,11 @@ const getSoftwareIcon = (software: string | null) => {
   text-overflow: ellipsis;
 }
 
-.status-tag {
-  font-size: 12px;
-}
-
-.version-tag {
-  font-family: monospace;
-  flex-shrink: 0;
-}
-
 .software-info {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 16px;
-  transition: opacity 0.3s ease;
-
-  &.with-version {
-    gap: 4px;
-  }
-}
-
-.token-label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-
-.info-icon {
-  cursor: help;
-}
-
-.depth-3 {
-  opacity: 0.7;
-}
-
-.token-display {
-  cursor: pointer;
-}
-
-.clickable-icon {
-  color: #409eff;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-  vertical-align: middle;
 }
 
 .card-footer-tip {
@@ -349,10 +266,17 @@ const getSoftwareIcon = (software: string | null) => {
 
 /* 移动端优化 */
 @media (max-width: 768px) {
-  .server-card {
-    &:hover {
-      transform: translateY(-2px);
-    }
+  .card-content {
+    gap: 8px;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .name-with-status {
+    justify-content: space-between;
   }
 
   .server-name {
@@ -362,42 +286,10 @@ const getSoftwareIcon = (software: string | null) => {
   .software-info {
     gap: 6px;
     margin-bottom: 12px;
-
-    .software-text {
-      font-size: 13px;
-    }
-  }
-
-  .token-section {
-    .token-input {
-      font-size: 12px;
-    }
   }
 }
 
-@media (max-width: 480px) {
-  .card-content {
-    gap: 6px;
-  }
-
-  .server-name {
-    font-size: 15px;
-  }
-
-  .header {
-    gap: 4px;
-  }
-
-  .name-with-status {
-    gap: 4px;
-  }
-
-  .software-info {
-    gap: 4px;
-    margin-bottom: 8px;
-  }
-}
-
+/* 卡片动画 */
 .card-appear-enter-active {
   transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
 }
