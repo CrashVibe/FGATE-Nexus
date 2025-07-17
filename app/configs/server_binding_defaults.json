@@ -1,0 +1,16 @@
+{
+    "maxBindCount": 4,
+    "codeLength": 6,
+    "codeMode": "mix",
+    "codeExpire": 5,
+    "allowUnbind": true,
+    "prefix": "/绑定 ",
+    "unbindPrefix": "/解绑 ",
+    "forceBind": false,
+    "kickMsg": "你好，&a#name&r！\n你还没有完成账号绑定，&c无法进入服务器！\n请使用指令：&b#cmd_prefix#code\n该验证码将在 &c#time &r后失效，请尽快绑定。",
+    "unbindKickMsg": "&l&k123456&a&l社交帐号被解绑&f&l&k123456\n您的社交账号&c #social_account &f已在社交平台解绑。",
+    "bindSuccessMsg": "绑定 #user 成功! 你可以进入服务器了!",
+    "bindFailMsg": "绑定 #user 失败! #why",
+    "unbindSuccessMsg": "解除绑定 #user 成功!",
+    "unbindFailMsg": "解除绑定 #user 失败! #why"
+}

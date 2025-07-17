@@ -1,0 +1,9 @@
+{
+    "enabled": false,
+    "mcToQq": true,
+    "qqToMc": true,
+    "groupIds": [],
+    "mcToQqTemplate": "[{server}] {player}: {message}",
+    "qqToMcTemplate": "[QQ] {nickname}: {message}",
+    "filterRules": []
+}
